@@ -4,12 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>利用規約 | VidScope</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root { --bg: #111; --text: #e0e0e0; --heading: #fff; --accent: #e53935; --card-bg: #1a1a1a; --border: #333; --link: #ef5350; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; }
-.header { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-bottom: 1px solid var(--border); }
-.header a { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 20px; }
+body { background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; }
+.header { display: flex; justify-content: space-between; align-items: center; height: 64px; padding: 0 40px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15,15,15,0.85); line-height: 1.6; }
+.header a { color: #f1f1f1; text-decoration: none; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; }
+.header a span { color: #ff0000; }
 .lang-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
 .lang-toggle:hover { border-color: var(--accent); }
 .container { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
@@ -30,7 +35,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 </head>
 <body>
 <div class="header">
-  <a href="/">VidScope</a>
+  <a href="/">Vid<span>Scope</span></a>
   <button class="lang-toggle" onclick="toggleLang()">English / 日本語</button>
 </div>
 

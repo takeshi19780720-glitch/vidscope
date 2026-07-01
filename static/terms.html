@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>利用規約 | VidScope</title>
+<style>
+:root { --bg: #111; --text: #e0e0e0; --heading: #fff; --accent: #e53935; --card-bg: #1a1a1a; --border: #333; --link: #ef5350; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-bottom: 1px solid var(--border); }
+.header a { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 20px; }
+.lang-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.lang-toggle:hover { border-color: var(--accent); }
+.container { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
+h1 { color: var(--heading); font-size: 28px; margin-bottom: 8px; }
+.updated { color: #999; font-size: 14px; margin-bottom: 40px; }
+h2 { color: var(--heading); font-size: 20px; margin-top: 40px; margin-bottom: 12px; border-left: 3px solid var(--accent); padding-left: 12px; }
+h3 { color: var(--heading); font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+p, li { margin-bottom: 8px; }
+ul { padding-left: 24px; }
+a { color: var(--link); }
+hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+.caps { font-size: 13px; }
+.footer { text-align: center; padding: 24px; color: #666; font-size: 13px; border-top: 1px solid var(--border); }
+.footer a { color: var(--link); text-decoration: none; margin: 0 12px; }
+.content-en, .content-ja { display: none; }
+.content-en.active, .content-ja.active { display: block; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/">VidScope</a>
+  <button class="lang-toggle" onclick="toggleLang()">English / 日本語</button>
+</div>
+
+<div class="container">
+
+<!-- English -->
+<div class="content-en" id="content-en">
+<h1>Terms of Service</h1>
+<p class="updated">Last Updated: June 20, 2026</p>
+
+<h2>1. Acceptance of Terms</h2>
+<p>By accessing or using the <strong>VidScope</strong> application ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the Service.</p>
+
+<h2>2. Description of Service</h2>
+<p>VidScope is a web-based application that allows users to search, discover, and organize YouTube video content using the YouTube Data API v3. Core features include:</p>
+<ul>
+<li>Keyword-based video search with date range filtering</li>
+<li>Viewing video details, statistics, and channel information</li>
+<li>Saving favorite videos</li>
+<li>Managing user interface preferences</li>
+</ul>
+<p>The Service is provided "as is" for personal, non-commercial use.</p>
+
+<h2>3. User Registration and Account Security</h2>
+<h3>3.1 Registration</h3>
+<p>Certain features require authentication via <strong>Google OAuth</strong>. By authenticating, you authorize VidScope to receive your Google account name and email address.</p>
+<h3>3.2 Account Responsibility</h3>
+<p>You are responsible for maintaining the confidentiality of your account and all activities under it. Notify us immediately of unauthorized use via our <a href="/contact">contact form</a>.</p>
+<h3>3.3 Eligibility</h3>
+<p>You must be at least 13 years of age to use the Service.</p>
+
+<h2>4. Acceptable Use</h2>
+<p>You agree not to:</p>
+<ul>
+<li>Use the Service in violation of any applicable law</li>
+<li>Use it for commercial purposes without written consent</li>
+<li>Attempt unauthorized access to the Service</li>
+<li>Reverse-engineer or decompile any part of the Service</li>
+<li>Use automated tools to extract data</li>
+<li>Circumvent API usage quotas or rate limits</li>
+<li>Use YouTube API data for advertising, profiling, or AI/ML training</li>
+</ul>
+
+<h2>5. Intellectual Property Rights</h2>
+<p>The Service and its original content are the property of VidScope. YouTube content accessed through the Service is subject to <a href="https://www.youtube.com/t/terms" target="_blank">YouTube Terms of Service</a> and respective rights holders.</p>
+
+<h2>6. Disclaimer of Warranties</h2>
+<p class="caps">THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED.</p>
+
+<h2>7. Limitation of Liability</h2>
+<p class="caps">TO THE FULLEST EXTENT PERMITTED BY LAW, VIDSCOPE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES.</p>
+
+<h2>8. YouTube API Services Usage</h2>
+<p>Your use of the Service is subject to:</p>
+<ul>
+<li><a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank">YouTube API Services Terms of Service</a></li>
+<li><a href="https://www.youtube.com/t/terms" target="_blank">YouTube Terms of Service</a></li>
+<li><a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></li>
+</ul>
+
+<h2>9. Termination</h2>
+<p>You may terminate your account via our <a href="/contact">contact form</a>. We may suspend or terminate access for violations of these Terms.</p>
+
+<h2>10. Governing Law</h2>
+<p>These Terms are governed by the laws of Japan. Disputes shall be subject to the exclusive jurisdiction of courts in Japan.</p>
+
+<h2>11. Contact Information</h2>
+<ul>
+<li><strong>Contact:</strong> <a href="/contact">Contact Form</a></li>
+<li><strong>Application:</strong> VidScope</li>
+</ul>
+</div>
+
+<!-- Japanese -->
+<div class="content-ja active" id="content-ja">
+<h1>利用規約</h1>
+<p class="updated">最終更新日: 2026年6月20日</p>
+
+<h2>1. 規約への同意</h2>
+<p><strong>VidScope</strong>アプリケーション（以下「本サービス」）にアクセスまたは使用することにより、本利用規約（以下「本規約」）に同意したものとみなされます。同意いただけない場合は、本サービスの使用をお控えください。</p>
+
+<h2>2. サービスの説明</h2>
+<p>VidScopeは、YouTube Data API v3を使用してYouTube動画コンテンツの検索、発見、整理ができるWebアプリケーションです。主な機能：</p>
+<ul>
+<li>キーワードによる動画検索（日付範囲フィルター付き）</li>
+<li>動画詳細、統計情報、チャンネル情報の閲覧</li>
+<li>お気に入り動画の保存</li>
+<li>ユーザーインターフェース設定の管理</li>
+</ul>
+<p>本サービスは個人的・非商用利用を前提として「現状のまま」提供されます。</p>
+
+<h2>3. ユーザー登録とアカウントセキュリティ</h2>
+<h3>3.1 登録</h3>
+<p>一部の機能には<strong>Google OAuth</strong>による認証が必要です。認証により、VidScopeがGoogleアカウントの氏名とメールアドレスを取得することを承認いただきます。</p>
+<h3>3.2 アカウントの責任</h3>
+<p>アカウントの機密性を維持し、アカウント下のすべての活動について責任を負います。不正使用があった場合は、速やかに<a href="/contact">お問い合わせフォーム</a>よりご連絡ください。</p>
+<h3>3.3 利用資格</h3>
+<p>本サービスを利用するには13歳以上である必要があります。</p>
+
+<h2>4. 許可される使用</h2>
+<p>以下の行為は禁止されています：</p>
+<ul>
+<li>法令に違反する使用</li>
+<li>書面による同意なしの商用利用</li>
+<li>本サービスへの不正アクセスの試行</li>
+<li>リバースエンジニアリングや逆コンパイル</li>
+<li>自動化ツールによるデータ抽出</li>
+<li>APIの使用制限やレート制限の回避</li>
+<li>YouTube APIデータの広告、プロファイリング、AI/ML学習への使用</li>
+</ul>
+
+<h2>5. 知的財産権</h2>
+<p>本サービスとそのオリジナルコンテンツはVidScopeの所有物です。本サービスを通じてアクセスするYouTubeコンテンツは <a href="https://www.youtube.com/t/terms" target="_blank">YouTube利用規約</a> および各著作権者の権利に従います。</p>
+
+<h2>6. 保証の免責</h2>
+<p>本サービスは、明示または黙示を問わず、いかなる種類の保証もなく「現状のまま」「利用可能な状態で」提供されます。</p>
+
+<h2>7. 責任の制限</h2>
+<p>法律で許容される最大限の範囲において、VidScopeは間接的、付随的、特別、結果的、または懲罰的損害について一切責任を負いません。</p>
+
+<h2>8. YouTube APIサービスの使用</h2>
+<p>本サービスの使用には、以下の規約が適用されます：</p>
+<ul>
+<li><a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank">YouTube APIサービス利用規約</a></li>
+<li><a href="https://www.youtube.com/t/terms" target="_blank">YouTube利用規約</a></li>
+<li><a href="https://policies.google.com/privacy" target="_blank">Googleプライバシーポリシー</a></li>
+</ul>
+
+<h2>9. 終了</h2>
+<p><a href="/contact">お問い合わせフォーム</a>よりご連絡いただくことで、いつでもアカウントを終了できます。本規約への違反があった場合、当社はアクセスを停止または終了することがあります。</p>
+
+<h2>10. 準拠法</h2>
+<p>本規約は日本法に準拠し、解釈されるものとします。紛争は日本国内の裁判所の専属管轄に服します。</p>
+
+<h2>11. お問い合わせ</h2>
+<ul>
+<li><strong>お問い合わせ：</strong> <a href="/contact">お問い合わせフォーム</a></li>
+<li><strong>アプリケーション：</strong> VidScope</li>
+</ul>
+</div>
+
+</div>
+
+<div class="footer">
+  <a href="/">VidScope</a> |
+  <a href="/privacy">プライバシーポリシー</a> |
+  <a href="/terms">利用規約</a> |
+  <a href="/app">アプリを使う</a>
+</div>
+
+<script>
+function toggleLang() {
+  const en = document.getElementById('content-en');
+  const ja = document.getElementById('content-ja');
+  en.classList.toggle('active');
+  ja.classList.toggle('active');
+}
+</script>
+</body>
+</html>

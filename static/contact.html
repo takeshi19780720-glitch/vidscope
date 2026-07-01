@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お問い合わせ | VidScope</title>
+<style>
+:root { --bg: #111; --text: #e0e0e0; --heading: #fff; --accent: #e53935; --card-bg: #1a1a1a; --border: #333; --link: #ef5350; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-bottom: 1px solid var(--border); }
+.header a { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 20px; }
+.container { max-width: 600px; margin: 0 auto; padding: 48px 24px 80px; }
+h1 { color: var(--heading); font-size: 28px; margin-bottom: 8px; }
+.subtitle { color: #999; font-size: 14px; margin-bottom: 40px; }
+label { display: block; color: var(--heading); font-size: 14px; font-weight: 600; margin-bottom: 6px; margin-top: 20px; }
+input, textarea, select {
+  width: 100%; padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text);
+  font-size: 15px; font-family: inherit; transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+textarea { resize: vertical; min-height: 140px; }
+select option { background: var(--card-bg); color: var(--text); }
+.required { color: var(--accent); }
+.submit-btn {
+  display: block; width: 100%; margin-top: 32px; padding: 14px;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+}
+.submit-btn:hover { background: #c62828; }
+.submit-btn:disabled { background: #555; cursor: not-allowed; }
+.success-msg {
+  display: none; text-align: center; padding: 40px 20px;
+  background: var(--card-bg); border-radius: 12px; margin-top: 20px;
+}
+.success-msg h2 { color: #4caf50; margin-bottom: 12px; }
+.success-msg p { color: var(--text); }
+.footer { text-align: center; padding: 24px; color: #666; font-size: 13px; border-top: 1px solid var(--border); }
+.footer a { color: var(--link); text-decoration: none; margin: 0 12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/">VidScope</a>
+</div>
+
+<div class="container">
+  <div id="form-section">
+    <h1>お問い合わせ</h1>
+    <p class="subtitle">ご質問、ご要望、データ削除リクエストなど、お気軽にお問い合わせください。</p>
+
+    <form id="contact-form">
+      <label>お名前 <span class="required">*</span></label>
+      <input type="text" id="contact-name" required placeholder="山田 太郎">
+
+      <label>メールアドレス <span class="required">*</span></label>
+      <input type="email" id="contact-email" required placeholder="example@email.com">
+
+      <label>カテゴリ <span class="required">*</span></label>
+      <select id="contact-category" required>
+        <option value="">選択してください</option>
+        <option value="general">一般的なお問い合わせ</option>
+        <option value="bug">不具合の報告</option>
+        <option value="feature">機能のリクエスト</option>
+        <option value="data-deletion">データ削除リクエスト</option>
+        <option value="privacy">プライバシーに関する質問</option>
+        <option value="other">その他</option>
+      </select>
+
+      <label>お問い合わせ内容 <span class="required">*</span></label>
+      <textarea id="contact-message" required placeholder="お問い合わせ内容をご記入ください..."></textarea>
+
+      <button type="submit" class="submit-btn" id="submit-btn">送信する</button>
+    </form>
+  </div>
+
+  <div class="success-msg" id="success-msg">
+    <h2>✓ 送信完了</h2>
+    <p>お問い合わせありがとうございます。<br>内容を確認の上、ご連絡いたします。</p>
+    <p style="margin-top: 20px;"><a href="/" style="color: var(--accent);">トップページに戻る</a></p>
+  </div>
+</div>
+
+<div class="footer">
+  <a href="/">VidScope</a> |
+  <a href="/privacy">プライバシーポリシー</a> |
+  <a href="/terms">利用規約</a> |
+  <a href="/app">アプリを使う</a>
+</div>
+
+<script>
+document.getElementById('contact-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const data = {
+    name: document.getElementById('contact-name').value,
+    email: document.getElementById('contact-email').value,
+    category: document.getElementById('contact-category').value,
+    message: document.getElementById('contact-message').value
+  };
+
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      document.getElementById('form-section').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'block';
+    } else {
+      alert('送信に失敗しました。時間をおいて再度お試しください。');
+      btn.disabled = false;
+      btn.textContent = '送信する';
+    }
+  } catch (err) {
+    alert('送信に失敗しました。時間をおいて再度お試しください。');
+    btn.disabled = false;
+    btn.textContent = '送信する';
+  }
+});
+</script>
+</body>
+</html>

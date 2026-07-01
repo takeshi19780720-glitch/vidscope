@@ -150,14 +150,18 @@ async def submit_contact(request: Request):
 def _send_contact_email(entry: dict):
     """お問い合わせ内容をGmailで通知"""
     import smtplib
+    import logging
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
+
+    logger = logging.getLogger("vidscope")
 
     smtp_user = os.getenv("SMTP_USER", "")
     smtp_pass = os.getenv("SMTP_PASSWORD", "")
     notify_to = os.getenv("NOTIFY_EMAIL", smtp_user)
 
     if not smtp_user or not smtp_pass:
+        logger.error("SMTP credentials not set: SMTP_USER=%s, SMTP_PASSWORD=%s", bool(smtp_user), bool(smtp_pass))
         return
 
     msg = MIMEMultipart()
@@ -181,9 +185,13 @@ def _send_contact_email(entry: dict):
 """
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(smtp_user, smtp_pass)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        logger.info("Contact email sent successfully to %s", notify_to)
+    except Exception as e:
+        logger.error("Failed to send contact email: %s", str(e))
 
 
 @app.get("/robots.txt", include_in_schema=False)
@@ -565,6 +573,18 @@ def admin_contacts(x_admin_password: str = Header(None)):
     with open(contact_file, "r") as f:
         data = _json.load(f)
     return list(reversed(data))
+
+
+@app.get("/api/admin/test-email")
+def test_email(x_admin_password: str = Header(None)):
+    """メール送信テスト"""
+    _require_admin(x_admin_password)
+    entry = {"timestamp": "テスト", "name": "テスト", "email": "test@test.com", "category": "テスト", "message": "メール送信テスト"}
+    try:
+        _send_contact_email(entry)
+        return {"status": "ok", "smtp_user_set": bool(os.getenv("SMTP_USER")), "smtp_pass_set": bool(os.getenv("SMTP_PASSWORD"))}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

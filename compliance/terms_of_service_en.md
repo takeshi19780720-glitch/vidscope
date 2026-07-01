@@ -184,7 +184,7 @@ If you have any questions about these Terms of Service, please contact us:
 
 - **Email:** takeshi19780720@gmail.com
 - **Application:** VidScope
-- **Website:** http://localhost:8000/
+- **Website:** https://vidscope.app/
 
 ---
 

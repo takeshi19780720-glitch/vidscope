@@ -9,7 +9,7 @@ Welcome to **VidScope** ("we," "us," or "our"). This Privacy Policy explains how
 **Operator Information:**
 - Application Name: VidScope
 - Contact Email: takeshi19780720@gmail.com
-- Website: http://localhost:8000/
+- Website: https://vidscope.app/
 
 ---
 
@@ -161,7 +161,7 @@ If you have any questions, concerns, or requests regarding this Privacy Policy, 
 
 - **Email:** takeshi19780720@gmail.com
 - **Application:** VidScope
-- **Website:** http://localhost:8000/
+- **Website:** https://vidscope.app/
 
 ---
 

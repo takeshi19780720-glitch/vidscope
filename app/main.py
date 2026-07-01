@@ -579,12 +579,10 @@ def admin_contacts(x_admin_password: str = Header(None)):
 def test_email(x_admin_password: str = Header(None)):
     """メール送信テスト"""
     _require_admin(x_admin_password)
+    import threading
     entry = {"timestamp": "テスト", "name": "テスト", "email": "test@test.com", "category": "テスト", "message": "メール送信テスト"}
-    try:
-        _send_contact_email(entry)
-        return {"status": "ok", "smtp_user_set": bool(os.getenv("SMTP_USER")), "smtp_pass_set": bool(os.getenv("SMTP_PASSWORD"))}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
+    threading.Thread(target=_send_contact_email, args=(entry,), daemon=True).start()
+    return {"status": "dispatched", "smtp_user_set": bool(os.getenv("SMTP_USER")), "smtp_pass_set": bool(os.getenv("SMTP_PASSWORD"))}
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

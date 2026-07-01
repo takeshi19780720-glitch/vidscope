@@ -139,7 +139,53 @@ async def submit_contact(request: Request):
     submissions.append(entry)
     with open(contact_file, "w") as f:
         json.dump(submissions, f, ensure_ascii=False, indent=2)
+
+    # メール通知
+    try:
+        _send_contact_email(entry)
+    except Exception:
+        pass  # メール送信失敗してもフォーム送信は成功とする
+
     return {"status": "ok"}
+
+
+def _send_contact_email(entry: dict):
+    """お問い合わせ内容をGmailで通知"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_user = os.getenv("SMTP_USER", "")
+    smtp_pass = os.getenv("SMTP_PASSWORD", "")
+    notify_to = os.getenv("NOTIFY_EMAIL", smtp_user)
+
+    if not smtp_user or not smtp_pass:
+        return
+
+    msg = MIMEMultipart()
+    msg["From"] = smtp_user
+    msg["To"] = notify_to
+    msg["Subject"] = f"【VidScope】お問い合わせ: {entry.get('category', '一般')}"
+
+    body = f"""VidScopeにお問い合わせがありました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 日時: {entry.get('timestamp', '')}
+■ お名前: {entry.get('name', '')}
+■ メール: {entry.get('email', '')}
+■ カテゴリ: {entry.get('category', '')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{entry.get('message', '')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールはVidScope (https://vidscope.app) から自動送信されています。
+"""
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
 
 
 @app.get("/robots.txt", include_in_schema=False)
@@ -508,6 +554,19 @@ def analytics_browsers(x_admin_password: str = Header(None)):
 def analytics_recent(x_admin_password: str = Header(None)):
     _require_admin(x_admin_password)
     return analytics.get_recent()
+
+
+@app.get("/api/admin/contacts")
+def admin_contacts(x_admin_password: str = Header(None)):
+    """お問い合わせ一覧を返す（新しい順）"""
+    import json as _json
+    _require_admin(x_admin_password)
+    contact_file = "data/contact_submissions.json"
+    if not os.path.exists(contact_file):
+        return []
+    with open(contact_file, "r") as f:
+        data = _json.load(f)
+    return list(reversed(data))
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

@@ -239,6 +239,22 @@
       </table>
     </div>
   </div>
+
+  <!-- Contact Submissions -->
+  <div class="panel" style="margin-top:16px;">
+    <div class="panel-title">📩 お問い合わせ一覧</div>
+    <div class="log-table-wrap">
+      <table class="log-table">
+        <thead>
+          <tr><th>日時</th><th>お名前</th><th>メール</th><th>カテゴリ</th><th>内容</th></tr>
+        </thead>
+        <tbody id="contact-list"></tbody>
+      </table>
+    </div>
+    <div id="no-contacts" style="color:var(--text2); text-align:center; padding:20px; display:none;">
+      お問い合わせはまだありません
+    </div>
+  </div>
 </div>
 
 <script>
@@ -315,6 +331,20 @@ function loadAll() {
       <td>${new Date(r.timestamp).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
       <td>${r.path}</td><td>${r.ip || '-'}</td>
       <td>${r.browser || '-'}</td><td>${r.os || '-'}</td><td>${r.country || '-'}</td>
+    </tr>`).join('');
+  });
+
+  // お問い合わせ一覧
+  api('/api/admin/contacts').then(d => {
+    const tbody = document.getElementById('contact-list');
+    const noMsg = document.getElementById('no-contacts');
+    if (!d.length) { noMsg.style.display = 'block'; tbody.innerHTML = ''; return; }
+    noMsg.style.display = 'none';
+    tbody.innerHTML = d.map(r => `<tr>
+      <td>${new Date(r.timestamp).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${r.name || '-'}</td><td>${r.email || '-'}</td>
+      <td>${r.category || '-'}</td>
+      <td style="max-width:300px;white-space:pre-wrap;word-break:break-word;">${r.message || '-'}</td>
     </tr>`).join('');
   });
 }

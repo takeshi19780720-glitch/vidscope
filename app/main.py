@@ -148,26 +148,18 @@ async def submit_contact(request: Request):
 
 
 def _send_contact_email(entry: dict):
-    """お問い合わせ内容をGmailで通知"""
-    import smtplib
+    """お問い合わせ内容をResend API経由で通知"""
+    import requests as req
     import logging
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
 
     logger = logging.getLogger("vidscope")
 
-    smtp_user = os.getenv("SMTP_USER", "")
-    smtp_pass = os.getenv("SMTP_PASSWORD", "")
-    notify_to = os.getenv("NOTIFY_EMAIL", smtp_user)
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    notify_to = os.getenv("NOTIFY_EMAIL", "")
 
-    if not smtp_user or not smtp_pass:
-        logger.error("SMTP credentials not set: SMTP_USER=%s, SMTP_PASSWORD=%s", bool(smtp_user), bool(smtp_pass))
+    if not resend_key or not notify_to:
+        logger.error("Resend credentials not set: RESEND_API_KEY=%s, NOTIFY_EMAIL=%s", bool(resend_key), bool(notify_to))
         return
-
-    msg = MIMEMultipart()
-    msg["From"] = smtp_user
-    msg["To"] = notify_to
-    msg["Subject"] = f"【VidScope】お問い合わせ: {entry.get('category', '一般')}"
 
     body = f"""VidScopeにお問い合わせがありました。
 
@@ -183,13 +175,23 @@ def _send_contact_email(entry: dict):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 このメールはVidScope (https://vidscope.app) から自動送信されています。
 """
-    msg.attach(MIMEText(body, "plain", "utf-8"))
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-        logger.info("Contact email sent successfully to %s", notify_to)
+        resp = req.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}"},
+            json={
+                "from": "VidScope <onboarding@resend.dev>",
+                "to": [notify_to],
+                "subject": f"【VidScope】お問い合わせ: {entry.get('category', '一般')}",
+                "text": body,
+            },
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            logger.info("Contact email sent successfully to %s", notify_to)
+        else:
+            logger.error("Failed to send contact email: %s %s", resp.status_code, resp.text)
     except Exception as e:
         logger.error("Failed to send contact email: %s", str(e))
 

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard | VidScope</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-card: #141414;
+      --bg-card-hover: #1a1a1a;
+      --border: rgba(255,255,255,0.06);
+      --text: #f1f1f1;
+      --text2: #888;
+      --red: #ff0000;
+      --red2: #cc0000;
+      --green: #00c853;
+      --blue: #2196f3;
+      --orange: #ff9800;
+      --purple: #9c27b0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      height: 64px; padding: 0 40px;
+      background: rgba(15,15,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    }
+    .header a {
+      color: var(--text); text-decoration: none;
+      font-weight: 800; font-size: 22px; letter-spacing: -0.5px;
+    }
+    .header a span { color: var(--red); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right .badge {
+      background: var(--red); color: #fff; padding: 4px 12px;
+      border-radius: 100px; font-size: 12px; font-weight: 600;
+    }
+    .header-right .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Auth */
+    .auth-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; z-index: 200;
+    }
+    .auth-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px; width: 360px; text-align: center;
+    }
+    .auth-box h2 { font-size: 20px; margin-bottom: 8px; }
+    .auth-box p { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
+    .auth-box input {
+      width: 100%; padding: 12px 16px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 14px; margin-bottom: 16px;
+    }
+    .auth-box button {
+      width: 100%; padding: 12px; border-radius: 8px; border: none;
+      background: var(--red); color: #fff; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .auth-box button:hover { background: var(--red2); }
+    .auth-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+
+    /* Dashboard */
+    .dashboard {
+      padding: 88px 40px 40px; max-width: 1200px; margin: 0 auto;
+    }
+    .dashboard-title {
+      font-size: 24px; font-weight: 800; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .dashboard-title .sub { color: var(--text2); font-size: 14px; font-weight: 400; }
+
+    /* Summary Cards */
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; transition: background 0.2s;
+    }
+    .card:hover { background: var(--bg-card-hover); }
+    .card-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-value { font-size: 32px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; }
+    .card-value.red { color: var(--red); }
+    .card-value.green { color: var(--green); }
+    .card-value.blue { color: var(--blue); }
+    .card-value.orange { color: var(--orange); }
+
+    /* Charts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+    .panel canvas { width: 100% !important; }
+
+    /* Rankings */
+    .rank-list { list-style: none; }
+    .rank-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-num { color: var(--red); font-weight: 700; width: 24px; }
+    .rank-name { flex: 1; margin-left: 8px; color: var(--text); }
+    .rank-count { color: var(--text2); font-weight: 500; }
+
+    /* Log Table */
+    .log-table-wrap { overflow-x: auto; margin-top: 16px; }
+    .log-table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+    }
+    .log-table th {
+      text-align: left; padding: 8px 12px; color: var(--text2);
+      border-bottom: 1px solid var(--border); font-weight: 600;
+    }
+    .log-table td {
+      padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text);
+    }
+    .log-table tr:hover td { background: var(--bg-card-hover); }
+
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .dashboard { padding: 88px 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Auth Overlay -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <h2>🔒 Analytics Dashboard</h2>
+    <p>管理者パスワードを入力してください</p>
+    <input type="password" id="auth-password" placeholder="管理者パスワード" autocomplete="current-password">
+    <button onclick="authenticate()">ログイン</button>
+    <div class="auth-error" id="auth-error">パスワードが正しくありません</div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <a href="/">Vid<span>Scope</span></a>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span class="badge">ANALYTICS</span>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard" style="display:none;">
+  <div class="dashboard-title">
+    Analytics Dashboard
+    <span class="sub" id="last-updated"></span>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">今日のページビュー</div>
+      <div class="card-value red" id="pv-today">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">ユニークビジター</div>
+      <div class="card-value blue" id="uv-today">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">検索数</div>
+      <div class="card-value orange" id="searches-today">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">アクティブユーザー</div>
+      <div class="card-value green" id="active-sessions">-</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title">📈 ページビュー推移（直近7日間）</div>
+      <canvas id="chart-pv" height="200"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🔍 検索キーワード TOP10</div>
+      <ol class="rank-list" id="top-searches"></ol>
+    </div>
+  </div>
+
+  <!-- Rankings Row -->
+  <div class="grid-3">
+    <div class="panel">
+      <div class="panel-title">📄 人気ページ TOP10</div>
+      <ol class="rank-list" id="top-pages"></ol>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🌍 アクセス元国 TOP10</div>
+      <ol class="rank-list" id="top-countries"></ol>
+    </div>
+    <div class="panel">
+      <div class="panel-title">💻 ブラウザ / OS 分布</div>
+      <canvas id="chart-browser" height="150"></canvas>
+      <canvas id="chart-os" height="150" style="margin-top:16px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent Logs -->
+  <div class="panel">
+    <div class="panel-title">🕐 直近のアクセスログ</div>
+    <div class="log-table-wrap">
+      <table class="log-table">
+        <thead>
+          <tr><th>時刻</th><th>ページ</th><th>IP</th><th>ブラウザ</th><th>OS</th><th>国</th></tr>
+        </thead>
+        <tbody id="recent-logs"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let adminPassword = '';
+let pvChart = null, browserChart = null, osChart = null;
+
+function authenticate() {
+  const pw = document.getElementById('auth-password').value;
+  fetch('/api/admin/analytics/summary', { headers: { 'X-Admin-Password': pw } })
+    .then(r => {
+      if (!r.ok) throw new Error('auth failed');
+      return r.json();
+    })
+    .then(() => {
+      adminPassword = pw;
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadAll();
+      setInterval(loadAll, 30000);
+    })
+    .catch(() => {
+      document.getElementById('auth-error').style.display = 'block';
+    });
+}
+
+document.getElementById('auth-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') authenticate();
+});
+
+function api(endpoint) {
+  return fetch(endpoint, { headers: { 'X-Admin-Password': adminPassword } }).then(r => r.json());
+}
+
+function loadAll() {
+  api('/api/admin/analytics/summary').then(d => {
+    document.getElementById('pv-today').textContent = d.pv_today.toLocaleString();
+    document.getElementById('uv-today').textContent = d.uv_today.toLocaleString();
+    document.getElementById('searches-today').textContent = d.searches_today.toLocaleString();
+    document.getElementById('active-sessions').textContent = d.active_sessions;
+    document.getElementById('last-updated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+  });
+
+  api('/api/admin/analytics/pageviews?days=7').then(d => {
+    const labels = d.map(x => x.date.slice(5));
+    const data = d.map(x => x.count);
+    if (pvChart) pvChart.destroy();
+    pvChart = new Chart(document.getElementById('chart-pv'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'PV', data, backgroundColor: 'rgba(255,0,0,0.7)', borderRadius: 6 }] },
+      options: {
+        responsive: true, plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#888' }, grid: { display: false } },
+          y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+        }
+      }
+    });
+  });
+
+  api('/api/admin/analytics/top-searches').then(d => renderRank('top-searches', d, 'query'));
+  api('/api/admin/analytics/top-pages').then(d => renderRank('top-pages', d, 'path'));
+  api('/api/admin/analytics/top-countries').then(d => renderRank('top-countries', d, 'country'));
+
+  api('/api/admin/analytics/browsers').then(d => {
+    if (browserChart) browserChart.destroy();
+    if (osChart) osChart.destroy();
+    browserChart = renderPie('chart-browser', d.browsers);
+    osChart = renderPie('chart-os', d.os);
+  });
+
+  api('/api/admin/analytics/recent').then(d => {
+    const tbody = document.getElementById('recent-logs');
+    tbody.innerHTML = d.map(r => `<tr>
+      <td>${new Date(r.timestamp).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${r.path}</td><td>${r.ip || '-'}</td>
+      <td>${r.browser || '-'}</td><td>${r.os || '-'}</td><td>${r.country || '-'}</td>
+    </tr>`).join('');
+  });
+}
+
+function renderRank(id, data, key) {
+  document.getElementById(id).innerHTML = data.map((r, i) =>
+    `<li class="rank-item"><span class="rank-num">${i+1}</span><span class="rank-name">${r[key]}</span><span class="rank-count">${r.count}</span></li>`
+  ).join('');
+}
+
+function renderPie(canvasId, data) {
+  const colors = ['#ff0000','#2196f3','#ff9800','#00c853','#9c27b0','#ff5722','#03a9f4','#ffc107','#4caf50','#e91e63'];
+  return new Chart(document.getElementById(canvasId), {
+    type: 'doughnut',
+    data: {
+      labels: data.map(x => x.name),
+      datasets: [{ data: data.map(x => x.count), backgroundColor: colors.slice(0, data.length), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { color: '#888', font: { size: 11 } } } }
+    }
+  });
+}
+</script>
+</body>
+</html>

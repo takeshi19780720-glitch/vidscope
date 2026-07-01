@@ -18,6 +18,7 @@ from starlette.requests import Request
 from app.config import settings
 from app.models import SearchResponse, VideoItem, ChannelInfo, ChannelVideoItem
 from app.youtube_client import YouTubeClient, YouTubeClientError, get_quota_status
+from app import analytics
 
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
@@ -53,6 +54,24 @@ def _cache_set(key: str, data):
 
 app = FastAPI(title="YouTube Data API v3 Search App")
 
+# --- アナリティクス初期化 ---
+analytics.init_db()
+
+
+# --- アクセス監視ミドルウェア ---
+class AnalyticsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        try:
+            ip = request.client.host if request.client else ""
+            ua = request.headers.get("user-agent", "")
+            lang = request.headers.get("accept-language", "").split(",")[0] if request.headers.get("accept-language") else ""
+            referer = request.headers.get("referer", "")
+            analytics.log_page_view(request.url.path, ip, ua, lang, referer)
+        except Exception:
+            pass
+        return response
+
 # --- レート制限 ---
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -70,6 +89,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(AnalyticsMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -224,6 +244,13 @@ def search(
     resolved_category = None if category_id == "all" else category_id
     resolved_language = None if language == "all" else language
     resolved_region = None if region == "all" else region
+
+    # 検索クエリを記録
+    try:
+        ip = request.client.host if request.client else ""
+        analytics.log_search_query(q, max_results, duration_filter, published_after, category_id, language, region, ip)
+    except Exception:
+        pass
 
     # キーワードが空の場合はそのまま空文字を渡す
     search_q = q
@@ -432,6 +459,55 @@ def get_channel_videos(channel_id: str):
     video_items = [ChannelVideoItem(**v) for v in videos]
     _channel_cache_set(videos_cache_key, video_items)
     return video_items
+
+
+# --- アナリティクス ダッシュボード ---
+
+@app.get("/admin/analytics")
+def analytics_page() -> FileResponse:
+    return FileResponse("static/admin/analytics.html")
+
+
+@app.get("/api/admin/analytics/summary")
+def analytics_summary(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_summary()
+
+
+@app.get("/api/admin/analytics/pageviews")
+def analytics_pageviews(days: int = Query(7, ge=1, le=90), x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_pageviews(days)
+
+
+@app.get("/api/admin/analytics/top-pages")
+def analytics_top_pages(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_top_pages()
+
+
+@app.get("/api/admin/analytics/top-searches")
+def analytics_top_searches(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_top_searches()
+
+
+@app.get("/api/admin/analytics/top-countries")
+def analytics_top_countries(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_top_countries()
+
+
+@app.get("/api/admin/analytics/browsers")
+def analytics_browsers(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_browsers()
+
+
+@app.get("/api/admin/analytics/recent")
+def analytics_recent(x_admin_password: str = Header(None)):
+    _require_admin(x_admin_password)
+    return analytics.get_recent()
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

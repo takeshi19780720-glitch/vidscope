@@ -140,11 +140,9 @@ async def submit_contact(request: Request):
     with open(contact_file, "w") as f:
         json.dump(submissions, f, ensure_ascii=False, indent=2)
 
-    # メール通知
-    try:
-        _send_contact_email(entry)
-    except Exception:
-        pass  # メール送信失敗してもフォーム送信は成功とする
+    # メール通知（バックグラウンド）
+    import threading
+    threading.Thread(target=_send_contact_email, args=(entry,), daemon=True).start()
 
     return {"status": "ok"}
 

@@ -141,6 +141,15 @@
       padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text);
     }
     .log-table tr:hover td { background: var(--bg-card-hover); }
+    .btn-delete {
+      background: transparent; border: 1px solid rgba(255,0,0,0.4);
+      color: var(--red); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 6px; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-delete:hover { background: var(--red); color: #fff; }
+    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 
     @media (max-width: 900px) {
       .cards { grid-template-columns: repeat(2, 1fr); }
@@ -246,7 +255,7 @@
     <div class="log-table-wrap">
       <table class="log-table">
         <thead>
-          <tr><th>日時</th><th>お名前</th><th>メール</th><th>カテゴリ</th><th>内容</th></tr>
+          <tr><th>日時</th><th>お名前</th><th>メール</th><th>カテゴリ</th><th>内容</th><th></th></tr>
         </thead>
         <tbody id="contact-list"></tbody>
       </table>
@@ -335,6 +344,10 @@ function loadAll() {
   });
 
   // お問い合わせ一覧
+  loadContacts();
+}
+
+function loadContacts() {
   api('/api/admin/contacts').then(d => {
     const tbody = document.getElementById('contact-list');
     const noMsg = document.getElementById('no-contacts');
@@ -345,8 +358,27 @@ function loadAll() {
       <td>${r.name || '-'}</td><td>${r.email || '-'}</td>
       <td>${r.category || '-'}</td>
       <td style="max-width:300px;white-space:pre-wrap;word-break:break-word;">${r.message || '-'}</td>
+      <td><button class="btn-delete" onclick="deleteContact(${r.id}, this)">削除</button></td>
     </tr>`).join('');
   });
+}
+
+function deleteContact(id, btn) {
+  if (!confirm('本当に削除しますか？')) return;
+  btn.disabled = true;
+  fetch(`/api/admin/contacts/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('delete failed');
+      return r.json();
+    })
+    .then(() => loadContacts())
+    .catch(() => {
+      alert('削除に失敗しました');
+      btn.disabled = false;
+    });
 }
 
 function renderRank(id, data, key) {

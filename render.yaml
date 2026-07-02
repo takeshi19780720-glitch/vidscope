@@ -9,5 +9,9 @@ services:
         sync: false  # Render管理画面で手動設定
       - key: ADMIN_PASSWORD
         sync: false  # Render管理画面で手動設定
+      - key: SUPABASE_URL
+        sync: false  # Render管理画面で手動設定
+      - key: SUPABASE_KEY
+        sync: false  # Render管理画面で手動設定
     healthCheckPath: /
     autoDeploy: true

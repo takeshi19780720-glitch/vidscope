@@ -19,6 +19,7 @@ from app.config import settings
 from app.models import SearchResponse, VideoItem, ChannelInfo, ChannelVideoItem
 from app.youtube_client import YouTubeClient, YouTubeClientError, get_quota_status
 from app import analytics
+from app import supabase_client
 
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
@@ -120,7 +121,6 @@ def contact_page() -> FileResponse:
 
 @app.post("/api/contact")
 async def submit_contact(request: Request):
-    import json, os
     from datetime import datetime
     data = await request.json()
     entry = {
@@ -130,18 +130,21 @@ async def submit_contact(request: Request):
         "category": data.get("category", ""),
         "message": data.get("message", ""),
     }
-    contact_file = "data/contact_submissions.json"
-    os.makedirs("data", exist_ok=True)
-    submissions = []
-    if os.path.exists(contact_file):
-        with open(contact_file, "r") as f:
-            submissions = json.load(f)
-    submissions.append(entry)
-    with open(contact_file, "w") as f:
-        json.dump(submissions, f, ensure_ascii=False, indent=2)
+
+    # Supabaseへ保存（バックグラウンド）
+    import threading
+    threading.Thread(
+        target=supabase_client.insert,
+        args=("contacts", {
+            "name": entry["name"],
+            "email": entry["email"],
+            "category": entry["category"],
+            "message": entry["message"],
+        }),
+        daemon=True,
+    ).start()
 
     # メール通知（バックグラウンド）
-    import threading
     threading.Thread(target=_send_contact_email, args=(entry,), daemon=True).start()
 
     return {"status": "ok"}
@@ -567,14 +570,33 @@ def analytics_recent(x_admin_password: str = Header(None)):
 @app.get("/api/admin/contacts")
 def admin_contacts(x_admin_password: str = Header(None)):
     """お問い合わせ一覧を返す（新しい順）"""
-    import json as _json
     _require_admin(x_admin_password)
-    contact_file = "data/contact_submissions.json"
-    if not os.path.exists(contact_file):
-        return []
-    with open(contact_file, "r") as f:
-        data = _json.load(f)
-    return list(reversed(data))
+    rows = supabase_client.select(
+        "contacts",
+        select="id,name,email,category,message,created_at",
+        order="created_at.desc",
+    )
+    return [
+        {
+            "id": r.get("id"),
+            "timestamp": r.get("created_at", ""),
+            "name": r.get("name", ""),
+            "email": r.get("email", ""),
+            "category": r.get("category", ""),
+            "message": r.get("message", ""),
+        }
+        for r in rows
+    ]
+
+
+@app.delete("/api/admin/contacts/{contact_id}")
+def delete_contact(contact_id: int, x_admin_password: str = Header(None)):
+    """お問い合わせを削除（認証必須）"""
+    _require_admin(x_admin_password)
+    ok = supabase_client.delete("contacts", {"id": f"eq.{contact_id}"})
+    if not ok:
+        raise HTTPException(status_code=502, detail="削除に失敗しました")
+    return {"status": "ok"}
 
 
 @app.get("/api/admin/test-email")

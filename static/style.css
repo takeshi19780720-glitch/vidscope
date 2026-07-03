@@ -217,6 +217,7 @@ button:hover {
   gap: 4px;
   font-size: 12px;
   color: var(--text-secondary);
+  min-width: 0;
 }
 
 .filter-item select,
@@ -227,6 +228,8 @@ button:hover {
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-primary);
+  width: 100%;
+  min-width: 0;
 }
 
 /* Status */
@@ -1289,6 +1292,10 @@ button:hover {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-item:hover {
@@ -1640,6 +1647,8 @@ button:hover {
   border-radius: 20px;
   padding: 4px 10px 4px 8px;
   transition: border-color 0.15s, background 0.15s;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .popular-keyword-item:hover {
@@ -1670,6 +1679,11 @@ button:hover {
   transition: color 0.15s;
   font-family: inherit;
   line-height: 1;
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .popular-keyword-btn:hover {

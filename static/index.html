@@ -64,12 +64,14 @@
         <span class="compare-dot compare-dot-kw1" id="compare-dot-kw1" title="キーワード1"></span>
         <input id="query" type="text" placeholder="キーワード" style="background:var(--bg-input2); border:1px solid var(--border4); border-radius:8px; color:var(--text-primary); padding:8px 12px; font-size:13px; width:100%;" />
       </div>
-      <div class="search-count-wrap">
-        <input id="max-results" type="number" min="1" max="200" value="50" placeholder="件数" style="background:var(--bg-input2); border:1px solid var(--border4); border-radius:8px; color:var(--text-primary); padding:8px 12px; font-size:13px; width:100%; min-width:0;" />
-        <span style="color:var(--text-secondary); font-size:13px; flex-shrink:0;">件</span>
+      <div class="search-actions-row">
+        <div class="search-count-wrap">
+          <input id="max-results" type="number" min="1" max="200" value="50" placeholder="件数" style="background:var(--bg-input2); border:1px solid var(--border4); border-radius:8px; color:var(--text-primary); padding:8px 12px; font-size:13px; width:100%; min-width:0;" />
+          <span style="color:var(--text-secondary); font-size:13px; flex-shrink:0;">件</span>
+        </div>
+        <button type="submit" class="youtube-btn cpm-save-btn" style="font-size:13px; padding:8px 16px; border-radius:8px;">検索</button>
+        <button type="button" id="compare-toggle-btn" class="youtube-btn cpm-save-btn compare-toggle-btn" style="font-size:13px; padding:8px 16px; border-radius:8px;" title="複数キーワードを比較">比較</button>
       </div>
-      <button type="submit" class="youtube-btn cpm-save-btn" style="font-size:13px; padding:8px 16px; border-radius:8px;">検索</button>
-      <button type="button" id="compare-toggle-btn" class="youtube-btn cpm-save-btn compare-toggle-btn" style="font-size:13px; padding:8px 16px; border-radius:8px;" title="複数キーワードを比較">比較</button>
     </form>
     <div id="compare-inputs-area" class="compare-inputs-area" style="display:none;">
       <div class="compare-input-row">

@@ -154,6 +154,12 @@ h1::before {
   min-width: 0;
 }
 
+/* 件数欄＋検索/比較ボタンのラップ。PCではgridの直接の子として振る舞うようdisplay:contents、
+   900px以下ではこの要素自体がflexコンテナになり1行に横並び表示する */
+.search-actions-row {
+  display: contents;
+}
+
 input,
 select {
   padding: 10px 14px;
@@ -1016,6 +1022,22 @@ button:hover {
   .keywords-history-row {
     width: 100%;
     margin: 8px 0 4px;
+  }
+  .search-form {
+    grid-template-columns: 1fr;
+  }
+  .search-actions-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .search-actions-row .search-count-wrap {
+    flex: 0 0 100px;
+    width: 100px;
+  }
+  .search-actions-row button {
+    flex: 1;
+    min-width: 0;
   }
 }
 
@@ -1886,6 +1908,27 @@ button:hover {
 /* 検索フォームのグリッド: キーワード1ラップ + 件数ラップ + 検索ボタン + 比較ボタン */
 .search-form {
   grid-template-columns: 1fr 110px 90px 90px;
+}
+
+/* 900px以下: キーワード欄を単独行、件数+検索+比較ボタンを1行に横並び
+   （通常モードの900pxルールが上の無条件4カラム指定に上書きされないよう再定義） */
+@media (max-width: 900px) {
+  .search-form {
+    grid-template-columns: 1fr;
+  }
+  .search-actions-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .search-actions-row .search-count-wrap {
+    flex: 0 0 100px;
+    width: 100px;
+  }
+  .search-actions-row button {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 /* キーワード1 入力欄ラップ（ドット + input） */

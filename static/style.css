@@ -821,6 +821,13 @@ button:hover {
   align-items: center;
   gap: 6px;
 }
+
+/* PC表示時: テーマ切替/設定ボタンを画面端に近づける */
+@media (min-width: 901px) {
+  .header-actions {
+    margin-right: -26px;
+  }
+}
 #theme-toggle-btn {
   background: none;
   border: none;

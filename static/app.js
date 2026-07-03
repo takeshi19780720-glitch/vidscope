@@ -1547,12 +1547,14 @@ function toggleCompareMode() {
   const dot1 = document.getElementById("compare-dot-kw1");
   if (compareMode) {
     btn.classList.add("active");
+    btn.textContent = "比較モード";
     area.style.display = "";
     dot1.style.display = "inline-block";
     // summary を非表示リセット
     document.getElementById("comparison-summary").style.display = "none";
   } else {
     btn.classList.remove("active");
+    btn.textContent = "比較";
     area.style.display = "none";
     dot1.style.display = "none";
     comparisonData = [];

@@ -1005,6 +1005,10 @@ button:hover {
   .results {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
+  .keywords-history-row {
+    width: 100%;
+    margin: 8px 0 4px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -1030,6 +1034,9 @@ button:hover {
   }
   .trend-grid {
     grid-template-columns: 1fr;
+  }
+  .keywords-history-row {
+    flex-direction: column;
   }
 }
 

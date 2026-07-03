@@ -999,6 +999,9 @@ button:hover {
 
 /* Responsive */
 @media (max-width: 900px) {
+  .container {
+    width: 100%;
+  }
   .results {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }

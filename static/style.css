@@ -1028,6 +1028,10 @@ button:hover {
   }
   .container {
     width: 100%;
+    /* 画面幅いっぱいに広がる子要素(.results等)が完全に0になるのを防ぎ、
+       画面幅に応じて左右1%程度の余白を持たせる */
+    padding-left: 1%;
+    padding-right: 1%;
   }
   .results {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

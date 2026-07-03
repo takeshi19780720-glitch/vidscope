@@ -500,8 +500,8 @@ button:hover {
 
 @media (max-width: 768px) {
   .results-header {
-    width: calc(100% - 32px);
-    margin: 0 16px 8px;
+    width: 100%;
+    margin: 0 0 8px;
   }
   .list-col-subs,
   .list-col-revenue,
@@ -1007,23 +1007,23 @@ button:hover {
 @media (max-width: 600px) {
   .results {
     grid-template-columns: 1fr;
-    padding: 8px 12px 24px;
+    padding: 8px 0 24px;
   }
   .search-form {
     grid-template-columns: 1fr;
-    margin: 12px;
-    width: calc(100% - 24px);
+    margin: 12px 0;
+    width: 100%;
   }
   .filters-row {
     grid-template-columns: 1fr;
-    margin: 0 12px 12px;
-    width: calc(100% - 24px);
+    margin: 0 0 12px;
+    width: 100%;
   }
   .results-toolbar,
   .trend-analysis {
-    margin-left: 12px;
-    margin-right: 12px;
-    width: calc(100% - 24px);
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
   }
   .trend-grid {
     grid-template-columns: 1fr;
@@ -1746,7 +1746,7 @@ button:hover {
     max-height: 100dvh;
   }
   .video-modal-header {
-    padding: 10px 12px;
+    padding: 10px 0;
   }
 }
 
@@ -1988,8 +1988,8 @@ button:hover {
 
 @media (max-width: 600px) {
   .compare-inputs-area {
-    margin: 0 12px 8px;
-    width: calc(100% - 24px);
+    margin: 0 0 8px;
+    width: 100%;
   }
   #comparison-summary {
     margin-bottom: 12px;

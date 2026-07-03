@@ -1020,6 +1020,9 @@ button:hover {
 
 /* Responsive */
 @media (max-width: 900px) {
+  h1 {
+    padding: 0 16px;
+  }
   .container {
     width: 100%;
   }

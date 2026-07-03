@@ -1947,14 +1947,21 @@ button:hover {
   box-sizing: border-box;
   min-width: 64px;
   text-align: center;
-}
-.compare-toggle-btn.active {
   background: #065fd4;
   border-color: #065fd4;
+  color: #fff;
 }
-.compare-toggle-btn.active:hover {
+.compare-toggle-btn:hover {
   background: #0550b3;
   border-color: #0550b3;
+}
+.compare-toggle-btn.active {
+  background: #5f6368;
+  border-color: #5f6368;
+}
+.compare-toggle-btn.active:hover {
+  background: #4a4d51;
+  border-color: #4a4d51;
 }
 
 /* 比較用キーワード2・3 入力エリア */

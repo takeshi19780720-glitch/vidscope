@@ -1949,6 +1949,16 @@ button:hover {
   min-width: 0;
 }
 
+/* 検索フォーム内のinput（キーワード欄・件数欄・比較用キーワード欄）の共通フォントサイズ・余白
+   ※ iOS Safariの自動ズーム対策はCSSではなくJS（app.js: focus/blurでfont-sizeを一時的に16pxへ）で行う */
+#query,
+#max-results,
+#query-2,
+#query-3 {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 /* 比較モードトグルボタン */
 .compare-toggle-btn {
   white-space: nowrap;

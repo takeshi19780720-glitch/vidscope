@@ -81,6 +81,27 @@ const videoModalPlayer = document.getElementById("video-modal-player");
 const videoModalTitle = document.getElementById("video-modal-title");
 const videoModalLink = document.getElementById("video-modal-link");
 
+// --- モバイルでのフォーカス時ズーム防止 ---
+// iOS Safariはinputフォーカス時点のfont-sizeが16px未満だと自動でページ全体をズームインする。
+// 900px以下（タブレット・スマホ幅）でのみ、フォーカス中は一時的にfont-sizeを16pxに引き上げ、
+// blur時にCSS本来のサイズ（13px）へ戻すことで、見た目のバランスを保ちつつズームを防止する。
+const ZOOM_GUARD_INPUT_IDS = ["query", "max-results", "query-2", "query-3"];
+function isMobileViewport() {
+  return window.matchMedia && window.matchMedia("(max-width: 900px)").matches;
+}
+ZOOM_GUARD_INPUT_IDS.forEach((id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("focus", () => {
+    if (isMobileViewport()) {
+      el.style.fontSize = "16px";
+    }
+  });
+  el.addEventListener("blur", () => {
+    el.style.fontSize = "";
+  });
+});
+
 // --- クォータ表示 ---
 async function fetchQuota() {
   try {

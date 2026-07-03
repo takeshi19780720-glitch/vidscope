@@ -139,11 +139,19 @@ h1::before {
 /* Search form */
 .search-form {
   display: grid;
-  grid-template-columns: 1fr 80px 30px 90px;
+  grid-template-columns: 1fr 110px 90px;
   gap: 8px;
   margin: 16px 24px;
   width: calc(100% - 48px);
   max-width: 750px;
+}
+
+/* 件数入力欄 + 「件」ラベルのラップ（グリッド上は1カラムとして扱う） */
+.search-count-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 input,
@@ -1875,9 +1883,9 @@ button:hover {
 
 /* ===== 比較モード ===== */
 
-/* 検索フォームのグリッド: キーワード1ラップ + 件数 + 件 + 検索ボタン + 比較ボタン */
+/* 検索フォームのグリッド: キーワード1ラップ + 件数ラップ + 検索ボタン + 比較ボタン */
 .search-form {
-  grid-template-columns: 1fr 80px 30px 90px 90px;
+  grid-template-columns: 1fr 110px 90px 90px;
 }
 
 /* キーワード1 入力欄ラップ（ドット + input） */
@@ -2012,7 +2020,7 @@ button:hover {
     padding: 4px 6px;
   }
   .search-form {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
   }
 }
 

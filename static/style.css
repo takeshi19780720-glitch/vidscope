@@ -1054,6 +1054,14 @@ button:hover {
   }
 }
 
+/* フィルターエリア: 7列グリッドのままだと「エンゲージメント率」「再生回数（万回以上）」等の
+   ラベルが折り返され縦位置がズレるため、この幅レンジのみ4列+3列の2段組みに切り替える */
+@media (min-width: 601px) and (max-width: 1279px) {
+  .filters-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 600px) {
   .results {
     grid-template-columns: 1fr;

@@ -99,8 +99,8 @@
       border-radius: 12px; padding: 20px; transition: background 0.2s;
     }
     .card:hover { background: var(--bg-card-hover); }
-    .card-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-    .card-value { font-size: 32px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; }
+    .card-label { font-size: 10px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-value { font-size: 28px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; }
     .card-value.red { color: var(--red); }
     .card-value.green { color: var(--green); }
     .card-value.blue { color: var(--blue); }
@@ -152,7 +152,7 @@
     .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 
     @media (max-width: 1200px) {
-      .cards { grid-template-columns: repeat(3, 1fr); }
+      .cards { grid-template-columns: repeat(4, 1fr); }
     }
     @media (max-width: 900px) {
       .cards { grid-template-columns: repeat(2, 1fr); }
@@ -193,16 +193,20 @@
   <!-- Summary Cards -->
   <div class="cards">
     <div class="card">
-      <div class="card-label">今日のページビュー</div>
+      <div class="card-label">今日のPV</div>
       <div class="card-value red" id="pv-today">-</div>
     </div>
     <div class="card">
-      <div class="card-label">週間ページビュー</div>
+      <div class="card-label">週間PV</div>
       <div class="card-value purple" id="pv-week">-</div>
     </div>
     <div class="card">
-      <div class="card-label">月間ページビュー</div>
+      <div class="card-label">月間PV</div>
       <div class="card-value" id="pv-month" style="color: #00bcd4;">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">累計PV</div>
+      <div class="card-value" id="pv-total" style="color: #e0e0e0;">-</div>
     </div>
     <div class="card">
       <div class="card-label">ユニークビジター</div>
@@ -215,10 +219,6 @@
     <div class="card">
       <div class="card-label">アクティブユーザー</div>
       <div class="card-value green" id="active-sessions">-</div>
-    </div>
-    <div class="card">
-      <div class="card-label">累計ページビュー</div>
-      <div class="card-value" id="pv-total" style="color: #e0e0e0;">-</div>
     </div>
   </div>
 

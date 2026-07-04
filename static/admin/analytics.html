@@ -93,7 +93,7 @@
     .dashboard-title .sub { color: var(--text2); font-size: 14px; font-weight: 400; }
 
     /* Summary Cards */
-    .cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 32px; }
+    .cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 32px; }
     .card {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 12px; padding: 20px; transition: background 0.2s;
@@ -197,6 +197,14 @@
       <div class="card-value red" id="pv-today">-</div>
     </div>
     <div class="card">
+      <div class="card-label">週間ページビュー</div>
+      <div class="card-value purple" id="pv-week">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">月間ページビュー</div>
+      <div class="card-value" id="pv-month" style="color: #00bcd4;">-</div>
+    </div>
+    <div class="card">
       <div class="card-label">ユニークビジター</div>
       <div class="card-value blue" id="uv-today">-</div>
     </div>
@@ -209,12 +217,8 @@
       <div class="card-value green" id="active-sessions">-</div>
     </div>
     <div class="card">
-      <div class="card-label">週間ページビュー</div>
-      <div class="card-value purple" id="pv-week">-</div>
-    </div>
-    <div class="card">
-      <div class="card-label">月間ページビュー</div>
-      <div class="card-value" id="pv-month" style="color: #00bcd4;">-</div>
+      <div class="card-label">累計ページビュー</div>
+      <div class="card-value" id="pv-total" style="color: #e0e0e0;">-</div>
     </div>
   </div>
 
@@ -311,11 +315,12 @@ function api(endpoint) {
 function loadAll() {
   api('/api/admin/analytics/summary').then(d => {
     document.getElementById('pv-today').textContent = d.pv_today.toLocaleString();
+    document.getElementById('pv-week').textContent = (d.pv_week || 0).toLocaleString();
+    document.getElementById('pv-month').textContent = (d.pv_month || 0).toLocaleString();
     document.getElementById('uv-today').textContent = d.uv_today.toLocaleString();
     document.getElementById('searches-today').textContent = d.searches_today.toLocaleString();
     document.getElementById('active-sessions').textContent = d.active_sessions;
-    document.getElementById('pv-week').textContent = (d.pv_week || 0).toLocaleString();
-    document.getElementById('pv-month').textContent = (d.pv_month || 0).toLocaleString();
+    document.getElementById('pv-total').textContent = d.pv_total.toLocaleString();
     document.getElementById('last-updated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
   });
 

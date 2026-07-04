@@ -2086,6 +2086,9 @@ button:hover {
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .compare-summary-title {
@@ -2190,7 +2193,7 @@ button:hover {
   width: 100%;
   margin-bottom: 8px;
   scrollbar-width: thin;
-  scrollbar-color: var(--border4) transparent;
+  scrollbar-color: var(--accent) transparent;
 }
 
 .top10-results::-webkit-scrollbar {
@@ -2202,7 +2205,7 @@ button:hover {
 }
 
 .top10-results::-webkit-scrollbar-thumb {
-  background: var(--border4);
+  background: var(--accent);
   border-radius: 2px;
 }
 

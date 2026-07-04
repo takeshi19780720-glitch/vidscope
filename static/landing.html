@@ -202,8 +202,10 @@ nav {
   position: absolute;
   cursor: pointer;
   box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  aspect-ratio: 16 / 10;
+  background: #111;
 }
-.slide-card img, .slide-card video { width: 100%; display: block; }
+.slide-card img, .slide-card video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .slide-label {
   text-align: center; padding: 10px;
   font-size: 13px; font-weight: 600; color: var(--gray);
@@ -255,7 +257,7 @@ nav {
 }
 .slider-ind.active { background: var(--red); transform: scale(1.3); }
 @media (max-width: 768px) {
-  .slide-card { width: 75%; }
+  .slide-card { width: 75%; aspect-ratio: 16 / 10; }
   .slide-card.pos-left { transform: translateX(-55%) scale(0.7) rotateY(25deg); }
   .slide-card.pos-right { transform: translateX(55%) scale(0.7) rotateY(-25deg); }
   .slider-track { height: 300px; }

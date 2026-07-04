@@ -1026,6 +1026,27 @@ button:hover {
   h1 {
     padding: 0 16px;
   }
+  /* トレンド分析ヘッダー: PCでは横並び+絶対配置のカラーピッカーだが、
+     スマホ幅では絶対配置のままだとタイトル/ボタンに重なるため、
+     縦積み(column)に変更してタイトル→ボタン群→カラーピッカーの順で
+     重ならず縦に並ぶようにする */
+  .trend-analysis-header {
+    flex-direction: column;
+    align-items: flex-start;
+    position: static;
+  }
+  .trend-analysis-header > .graph-color-picker-wrap {
+    position: static;
+    width: 100%;
+  }
+  .graph-toggle-controls {
+    width: 100%;
+    flex-wrap: wrap;
+    margin-right: 0;
+  }
+  .graph-color-picker-wrap {
+    flex-wrap: wrap;
+  }
   .container {
     width: 100%;
     /* 画面幅いっぱいに広がる子要素(.results等)が完全に0になるのを防ぎ、

@@ -2203,16 +2203,17 @@ button:hover {
 .top10-results {
   display: flex;
   gap: 8px;
-  padding: 0 24px;
+  padding: 0 24px 12px;
   overflow-x: auto;
   width: 100%;
   margin-bottom: 8px;
+  position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
 }
 
 .top10-results::-webkit-scrollbar {
-  height: 4px;
+  height: 6px;
 }
 
 .top10-results::-webkit-scrollbar-track {
@@ -2221,7 +2222,7 @@ button:hover {
 
 .top10-results::-webkit-scrollbar-thumb {
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .top10-card {

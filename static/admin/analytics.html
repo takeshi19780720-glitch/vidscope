@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics Dashboard | VidScope</title>
+  <title data-i18n-doctitle="analytics.docTitle">Analytics Dashboard | VidScope</title>
+  <link rel="canonical" href="https://vidscope.app/admin/analytics" />
+  <link rel="alternate" hreflang="ja" href="https://vidscope.app/admin/analytics" />
+  <link rel="alternate" hreflang="en" href="https://vidscope.app/admin/analytics?lang=en" />
+  <link rel="alternate" hreflang="ko" href="https://vidscope.app/admin/analytics?lang=ko" />
+  <link rel="alternate" hreflang="zh" href="https://vidscope.app/admin/analytics?lang=zh" />
+  <link rel="alternate" hreflang="x-default" href="https://vidscope.app/admin/analytics" />
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -57,6 +63,14 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
+    .lang-switcher { position: relative; }
+    .lang-switcher-btn { background: none; border: none; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
+    .lang-switcher-btn:hover { background: rgba(255,255,255,0.06); }
+    .lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .lang-switcher-menu.open { display: block; }
+    .lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 10px 14px; cursor: pointer; white-space: nowrap; }
+    .lang-option:hover { background: rgba(255,255,255,0.06); }
+    .lang-option.active { background: rgba(255,0,0,0.12); font-weight: 700; }
 
     /* Auth */
     .auth-overlay {
@@ -166,11 +180,11 @@
 <!-- Auth Overlay -->
 <div class="auth-overlay" id="auth-overlay">
   <div class="auth-box">
-    <h2>🔒 Analytics Dashboard</h2>
-    <p>管理者パスワードを入力してください</p>
-    <input type="password" id="auth-password" placeholder="管理者パスワード" autocomplete="current-password">
-    <button onclick="authenticate()">ログイン</button>
-    <div class="auth-error" id="auth-error">パスワードが正しくありません</div>
+    <h2 data-i18n="analytics.authTitle">🔒 Analytics Dashboard</h2>
+    <p data-i18n="analytics.authDesc">管理者パスワードを入力してください</p>
+    <input type="password" id="auth-password" data-i18n-placeholder="analytics.authPlaceholder" placeholder="管理者パスワード" autocomplete="current-password">
+    <button onclick="authenticate()" data-i18n="analytics.authBtn">ログイン</button>
+    <div class="auth-error" id="auth-error" data-i18n="analytics.authError">パスワードが正しくありません</div>
   </div>
 </div>
 
@@ -180,44 +194,53 @@
   <div class="header-right">
     <div class="live-dot"></div>
     <span class="badge">ANALYTICS</span>
+    <div class="lang-switcher">
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current>🇯🇵 日本語</span></button>
+      <div class="lang-switcher-menu">
+        <button type="button" class="lang-option" data-lang="ja">🇯🇵 日本語</button>
+        <button type="button" class="lang-option" data-lang="en">🇺🇸 English</button>
+        <button type="button" class="lang-option" data-lang="ko">🇰🇷 한국어</button>
+        <button type="button" class="lang-option" data-lang="zh">🇨🇳 中文（简体）</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Dashboard -->
 <div class="dashboard" id="dashboard" style="display:none;">
   <div class="dashboard-title">
-    Analytics Dashboard
+    <span data-i18n="analytics.pageTitle">Analytics Dashboard</span>
     <span class="sub" id="last-updated"></span>
   </div>
 
   <!-- Summary Cards -->
   <div class="cards">
     <div class="card">
-      <div class="card-label">今日のPV</div>
+      <div class="card-label" data-i18n="analytics.cardToday">今日のPV</div>
       <div class="card-value red" id="pv-today">-</div>
     </div>
     <div class="card">
-      <div class="card-label">週間PV</div>
+      <div class="card-label" data-i18n="analytics.cardWeek">週間PV</div>
       <div class="card-value purple" id="pv-week">-</div>
     </div>
     <div class="card">
-      <div class="card-label">月間PV</div>
+      <div class="card-label" data-i18n="analytics.cardMonth">月間PV</div>
       <div class="card-value" id="pv-month" style="color: #00bcd4;">-</div>
     </div>
     <div class="card">
-      <div class="card-label">累計PV</div>
+      <div class="card-label" data-i18n="analytics.cardTotal">累計PV</div>
       <div class="card-value" id="pv-total" style="color: #e0e0e0;">-</div>
     </div>
     <div class="card">
-      <div class="card-label">ユニークビジター</div>
+      <div class="card-label" data-i18n="analytics.cardUnique">ユニークビジター</div>
       <div class="card-value blue" id="uv-today">-</div>
     </div>
     <div class="card">
-      <div class="card-label">検索数</div>
+      <div class="card-label" data-i18n="analytics.cardSearches">検索数</div>
       <div class="card-value orange" id="searches-today">-</div>
     </div>
     <div class="card">
-      <div class="card-label">アクティブユーザー</div>
+      <div class="card-label" data-i18n="analytics.cardActive">アクティブユーザー</div>
       <div class="card-value green" id="active-sessions">-</div>
     </div>
   </div>
@@ -225,11 +248,11 @@
   <!-- Charts Row -->
   <div class="grid-2">
     <div class="panel">
-      <div class="panel-title">📈 ページビュー推移（直近7日間）</div>
+      <div class="panel-title" data-i18n="analytics.panelPvTrend">📈 ページビュー推移（直近7日間）</div>
       <canvas id="chart-pv" height="200"></canvas>
     </div>
     <div class="panel">
-      <div class="panel-title">🔍 検索キーワード TOP10</div>
+      <div class="panel-title" data-i18n="analytics.panelTopSearches">🔍 検索キーワード TOP10</div>
       <ol class="rank-list" id="top-searches"></ol>
     </div>
   </div>
@@ -237,15 +260,15 @@
   <!-- Rankings Row -->
   <div class="grid-3">
     <div class="panel">
-      <div class="panel-title">📄 人気ページ TOP10</div>
+      <div class="panel-title" data-i18n="analytics.panelTopPages">📄 人気ページ TOP10</div>
       <ol class="rank-list" id="top-pages"></ol>
     </div>
     <div class="panel">
-      <div class="panel-title">🌍 アクセス元国 TOP10</div>
+      <div class="panel-title" data-i18n="analytics.panelTopCountries">🌍 アクセス元国 TOP10</div>
       <ol class="rank-list" id="top-countries"></ol>
     </div>
     <div class="panel">
-      <div class="panel-title">💻 ブラウザ / OS 分布</div>
+      <div class="panel-title" data-i18n="analytics.panelBrowserOs">💻 ブラウザ / OS 分布</div>
       <canvas id="chart-browser" height="150"></canvas>
       <canvas id="chart-os" height="150" style="margin-top:16px;"></canvas>
     </div>
@@ -253,11 +276,11 @@
 
   <!-- Recent Logs -->
   <div class="panel">
-    <div class="panel-title">🕐 直近のアクセスログ</div>
+    <div class="panel-title" data-i18n="analytics.panelRecentLogs">🕐 直近のアクセスログ</div>
     <div class="log-table-wrap">
       <table class="log-table">
         <thead>
-          <tr><th>時刻</th><th>ページ</th><th>IP</th><th>ブラウザ</th><th>OS</th><th>国</th></tr>
+          <tr><th data-i18n="analytics.colTime">時刻</th><th data-i18n="analytics.colPage">ページ</th><th data-i18n="analytics.colIp">IP</th><th data-i18n="analytics.colBrowser">ブラウザ</th><th data-i18n="analytics.colOs">OS</th><th data-i18n="analytics.colCountry">国</th></tr>
         </thead>
         <tbody id="recent-logs"></tbody>
       </table>
@@ -266,21 +289,22 @@
 
   <!-- Contact Submissions -->
   <div class="panel" style="margin-top:16px;">
-    <div class="panel-title">📩 お問い合わせ一覧</div>
+    <div class="panel-title" data-i18n="analytics.panelContacts">📩 お問い合わせ一覧</div>
     <div class="log-table-wrap">
       <table class="log-table">
         <thead>
-          <tr><th>日時</th><th>お名前</th><th>メール</th><th>カテゴリ</th><th>内容</th><th></th></tr>
+          <tr><th data-i18n="analytics.colDate">日時</th><th data-i18n="analytics.colName">お名前</th><th data-i18n="analytics.colEmail">メール</th><th data-i18n="analytics.colCategory">カテゴリ</th><th data-i18n="analytics.colMessage">内容</th><th></th></tr>
         </thead>
         <tbody id="contact-list"></tbody>
       </table>
     </div>
-    <div id="no-contacts" style="color:var(--text2); text-align:center; padding:20px; display:none;">
+    <div id="no-contacts" style="color:var(--text2); text-align:center; padding:20px; display:none;" data-i18n="analytics.noContacts">
       お問い合わせはまだありません
     </div>
   </div>
 </div>
 
+<script src="/static/i18n/i18n.js"></script>
 <script>
 let adminPassword = '';
 let pvChart = null, browserChart = null, osChart = null;
@@ -321,7 +345,9 @@ function loadAll() {
     document.getElementById('searches-today').textContent = d.searches_today.toLocaleString();
     document.getElementById('active-sessions').textContent = d.active_sessions;
     document.getElementById('pv-total').textContent = d.pv_total.toLocaleString();
-    document.getElementById('last-updated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+    const locale = (window.VidScopeI18n && window.VidScopeI18n.getLocale()) || 'ja-JP';
+    document.getElementById('last-updated').textContent =
+      (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.lastUpdated') : '最終更新') + ': ' + new Date().toLocaleTimeString(locale);
   });
 
   api('/api/admin/analytics/pageviews?days=7').then(d => {
@@ -354,8 +380,9 @@ function loadAll() {
 
   api('/api/admin/analytics/recent').then(d => {
     const tbody = document.getElementById('recent-logs');
+    const locale = (window.VidScopeI18n && window.VidScopeI18n.getLocale()) || 'ja-JP';
     tbody.innerHTML = d.map(r => `<tr>
-      <td>${new Date(r.timestamp).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${new Date(r.timestamp).toLocaleString(locale, {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
       <td>${r.path}</td><td>${r.ip || '-'}</td>
       <td>${r.browser || '-'}</td><td>${r.os || '-'}</td><td>${r.country || '-'}</td>
     </tr>`).join('');
@@ -371,18 +398,21 @@ function loadContacts() {
     const noMsg = document.getElementById('no-contacts');
     if (!d.length) { noMsg.style.display = 'block'; tbody.innerHTML = ''; return; }
     noMsg.style.display = 'none';
+    const locale = (window.VidScopeI18n && window.VidScopeI18n.getLocale()) || 'ja-JP';
+    const deleteLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteBtn') : '削除');
     tbody.innerHTML = d.map(r => `<tr>
-      <td>${new Date(r.timestamp).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${new Date(r.timestamp).toLocaleString(locale, {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
       <td>${r.name || '-'}</td><td>${r.email || '-'}</td>
       <td>${r.category || '-'}</td>
       <td style="max-width:300px;white-space:pre-wrap;word-break:break-word;">${r.message || '-'}</td>
-      <td><button class="btn-delete" onclick="deleteContact(${r.id}, this)">削除</button></td>
+      <td><button class="btn-delete" onclick="deleteContact(${r.id}, this)">${deleteLabel}</button></td>
     </tr>`).join('');
   });
 }
 
 function deleteContact(id, btn) {
-  if (!confirm('本当に削除しますか？')) return;
+  const confirmMsg = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteConfirm') : '本当に削除しますか？');
+  if (!confirm(confirmMsg)) return;
   btn.disabled = true;
   fetch(`/api/admin/contacts/${id}`, {
     method: 'DELETE',
@@ -394,7 +424,7 @@ function deleteContact(id, btn) {
     })
     .then(() => loadContacts())
     .catch(() => {
-      alert('削除に失敗しました');
+      alert(window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteFailed') : '削除に失敗しました');
       btn.disabled = false;
     });
 }

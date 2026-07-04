@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>プライバシーポリシー | VidScope</title>
+<title data-i18n-doctitle="privacy.docTitle">プライバシーポリシー | VidScope</title>
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/static/i18n/i18n.js"></script>
 <style>
 :root { --bg: #111; --text: #e0e0e0; --heading: #fff; --accent: #e53935; --card-bg: #1a1a1a; --border: #333; --link: #ef5350; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,8 +16,12 @@ body { background: var(--bg); color: var(--text); font-family: Inter, -apple-sys
 .header { display: flex; justify-content: space-between; align-items: center; height: 64px; padding: 0 40px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15,15,15,0.85); line-height: 1.6; }
 .header a { color: #f1f1f1; text-decoration: none; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; }
 .header a span { color: #ff0000; }
-.lang-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-.lang-toggle:hover { border-color: var(--accent); }
+.lang-switcher { position: relative; }
+.lang-switcher-btn { background: none; border: none; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
+.lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.lang-switcher-menu.open { display: block; }
+.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 8px 12px; cursor: pointer; }
+.lang-option.active { color: var(--link); font-weight: 700; }
 .container { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
 h1 { color: var(--heading); font-size: 28px; margin-bottom: 8px; }
 .updated { color: #999; font-size: 14px; margin-bottom: 40px; }
@@ -38,7 +43,13 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 <body>
 <div class="header">
   <a href="/">Vid<span>Scope</span></a>
-  <button class="lang-toggle" onclick="toggleLang()">English / 日本語</button>
+  <div class="lang-switcher">
+    <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current>🇯🇵 日本語</span></button>
+    <div class="lang-switcher-menu">
+      <button type="button" class="lang-option" data-lang="ja">🇯🇵 日本語</button>
+      <button type="button" class="lang-option" data-lang="en">🇺🇸 English</button>
+    </div>
+  </div>
 </div>
 
 <div class="container">
@@ -188,19 +199,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 </div>
 
 <div class="footer">
-  <a href="/">VidScope</a> |
-  <a href="/privacy">プライバシーポリシー</a> |
-  <a href="/terms">利用規約</a> |
-  <a href="/app">アプリを使う</a>
+  <a href="/" data-i18n="common.footer.home">VidScope</a> |
+  <a href="/privacy" data-i18n="common.footer.privacy">プライバシーポリシー</a> |
+  <a href="/terms" data-i18n="common.footer.terms">利用規約</a> |
+  <a href="/app" data-i18n="common.footer.app">アプリを使う</a>
 </div>
 
-<script>
-function toggleLang() {
-  const en = document.getElementById('content-en');
-  const ja = document.getElementById('content-ja');
-  en.classList.toggle('active');
-  ja.classList.toggle('active');
-}
-</script>
 </body>
 </html>

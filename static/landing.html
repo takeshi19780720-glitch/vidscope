@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VidScope — YouTube動画の発見をもっとスマートに！</title>
+<title data-i18n-doctitle="app.docTitle">VidScope — YouTube動画の発見をもっとスマートに！</title>
 <meta name="description" content="VidScopeはYouTube Data APIを活用した高機能動画検索アプリ。言語・地域フィルター、再生回数ランキング、推定収益分析で、最適な動画を瞬時に見つけます。">
 <link rel="canonical" href="https://vidscope.app/" />
 <meta property="og:type" content="website" />
@@ -21,6 +21,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="/static/i18n/i18n.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -73,6 +74,14 @@ nav {
   transition: background 0.2s;
 }
 .nav-cta:hover { background: var(--red-dark) !important; }
+
+/* Language Switcher */
+.lang-switcher { position: relative; }
+.lang-switcher-btn { background: none; border: none; color: var(--white); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
+.lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: rgba(30,30,30,0.98); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.lang-switcher-menu.open { display: block; }
+.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--white); font-size: 13px; padding: 8px 12px; cursor: pointer; }
+.lang-option.active { color: #ff6b6b; font-weight: 700; }
 
 /* ===== HERO ===== */
 .hero {
@@ -425,22 +434,29 @@ footer a:hover { color: var(--white); }
 <nav>
   <a href="#" class="nav-logo">Vid<span>Scope</span></a>
   <div class="nav-links">
-    <a href="#features">機能</a>
-    <a href="#how">使い方</a>
-    <a href="#pricing">料金</a>
-    <a href="#faq">FAQ</a>
-    <a href="/app?duration=short" class="nav-cta">アプリを開く →</a>
+    <a href="#features" data-i18n="landing.navFeatures">機能</a>
+    <a href="#how" data-i18n="landing.navHow">使い方</a>
+    <a href="#pricing" data-i18n="landing.navPricing">料金</a>
+    <a href="#faq" data-i18n="landing.navFaq">FAQ</a>
+    <a href="/app?duration=short" class="nav-cta" data-i18n="landing.navCta">アプリを開く →</a>
+    <div class="lang-switcher">
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current>🇯🇵 日本語</span></button>
+      <div class="lang-switcher-menu">
+        <button type="button" class="lang-option" data-lang="ja">🇯🇵 日本語</button>
+        <button type="button" class="lang-option" data-lang="en">🇺🇸 English</button>
+      </div>
+    </div>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">YouTube Data API v3 搭載</div>
-  <h1>YouTube動画の発見を<br>もっと<em>スマート</em>に！</h1>
-  <p>VidScopeは、言語・地域・再生時間などの高度なフィルターで最適な動画を瞬時に見つける、次世代のYouTube検索・分析アプリです。</p>
+  <div class="hero-badge" data-i18n="landing.heroBadge">YouTube Data API v3 搭載</div>
+  <h1 data-i18n-html="landing.heroTitle">YouTube動画の発見を<br>もっと<em>スマート</em>に！</h1>
+  <p data-i18n="landing.heroDesc">VidScopeは、言語・地域・再生時間などの高度なフィルターで最適な動画を瞬時に見つける、次世代のYouTube検索・分析アプリです。</p>
   <div class="hero-buttons">
-    <a href="/app?duration=short" class="btn-primary">🎬 無料で始める</a>
-    <a href="#features" class="btn-secondary">機能を見る</a>
+    <a href="/app?duration=short" class="btn-primary" data-i18n="landing.heroBtnPrimary">🎬 無料で始める</a>
+    <a href="#features" class="btn-secondary" data-i18n="landing.heroBtnSecondary">機能を見る</a>
   </div>
 
   <div class="hero-mockup">
@@ -448,19 +464,19 @@ footer a:hover { color: var(--white); }
       <div class="slider-track" id="sliderTrack">
         <div class="slide-card" data-index="0">
           <video src="/static/demo-search.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label">🔍 キーワード検索 → 結果表示</div>
+          <div class="slide-label" data-i18n="landing.slide1">🔍 キーワード検索 → 結果表示</div>
         </div>
         <div class="slide-card active" data-index="1">
           <video src="/static/demo-graphs.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label">📊 トレンド分析グラフ</div>
+          <div class="slide-label" data-i18n="landing.slide2">📊 トレンド分析グラフ</div>
         </div>
         <div class="slide-card" data-index="2">
           <video src="/static/demo-results.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label">🎬 検索結果一覧</div>
+          <div class="slide-label" data-i18n="landing.slide3">🎬 検索結果一覧</div>
         </div>
         <div class="slide-card" data-index="3">
           <video src="/static/demo-preview.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label">▶️ 動画プレビュー</div>
+          <div class="slide-label" data-i18n="landing.slide4">▶️ 動画プレビュー</div>
         </div>
       </div>
       <div class="slider-nav">
@@ -480,40 +496,40 @@ footer a:hover { color: var(--white); }
 <!-- FEATURES -->
 <section id="features">
   <div class="section-header">
-    <p class="label">Features</p>
-    <h2>検索を、もっと自由に。</h2>
-    <p>VidScopeは、YouTubeの標準検索では届かない高精度なフィルタリングを実現します。</p>
+    <p class="label" data-i18n="landing.featuresLabel">Features</p>
+    <h2 data-i18n="landing.featuresTitle">検索を、もっと自由に。</h2>
+    <p data-i18n="landing.featuresDesc">VidScopeは、YouTubeの標準検索では届かない高精度なフィルタリングを実現します。</p>
   </div>
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon">🌍</div>
-      <h3>多言語・地域フィルター</h3>
-      <p>日本語、英語、韓国語、中国語など言語別に動画を絞り込み。地域指定でローカルトレンドも発見。</p>
+      <h3 data-i18n="landing.feature1Title">多言語・地域フィルター</h3>
+      <p data-i18n="landing.feature1Desc">日本語、英語、韓国語、中国語など言語別に動画を絞り込み。地域指定でローカルトレンドも発見。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">📊</div>
-      <h3>再生回数ランキング</h3>
-      <p>再生回数順の正確なソートで、人気動画を一目で把握。エンゲージメント率も自動計算。</p>
+      <h3 data-i18n="landing.feature2Title">再生回数ランキング</h3>
+      <p data-i18n="landing.feature2Desc">再生回数順の正確なソートで、人気動画を一目で把握。エンゲージメント率も自動計算。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">⏱️</div>
-      <h3>再生時間フィルター</h3>
-      <p>ショート動画、通常動画、長尺動画を簡単に切り替え。目的に合った動画だけを表示。</p>
+      <h3 data-i18n="landing.feature3Title">再生時間フィルター</h3>
+      <p data-i18n="landing.feature3Desc">ショート動画、通常動画、長尺動画を簡単に切り替え。目的に合った動画だけを表示。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">💰</div>
-      <h3>推定収益シミュレーション</h3>
-      <p>CPMベースで動画の推定収益を自動算出。ジャンル別CPMのカスタム設定にも対応。</p>
+      <h3 data-i18n="landing.feature4Title">推定収益シミュレーション</h3>
+      <p data-i18n="landing.feature4Desc">CPMベースで動画の推定収益を自動算出。ジャンル別CPMのカスタム設定にも対応。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🔑</div>
-      <h3>マルチAPIキー</h3>
-      <p>複数のAPIキーを登録可能。クォータ超過時に自動ローテーションで、検索が止まらない。</p>
+      <h3 data-i18n="landing.feature5Title">マルチAPIキー</h3>
+      <p data-i18n="landing.feature5Desc">複数のAPIキーを登録可能。クォータ超過時に自動ローテーションで、検索が止まらない。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🔒</div>
-      <h3>セキュア設計</h3>
-      <p>管理者認証、レート制限、セキュリティヘッダーを標準装備。安心して運用できます。</p>
+      <h3 data-i18n="landing.feature6Title">セキュア設計</h3>
+      <p data-i18n="landing.feature6Desc">管理者認証、レート制限、セキュリティヘッダーを標準装備。安心して運用できます。</p>
     </div>
   </div>
 </section>
@@ -521,25 +537,25 @@ footer a:hover { color: var(--white); }
 <!-- HOW IT WORKS -->
 <section id="how" style="background: var(--dark2);">
   <div class="section-header">
-    <p class="label">How it works</p>
-    <h2>3ステップで始める</h2>
-    <p>難しい設定は不要。すぐに使い始められます。</p>
+    <p class="label" data-i18n="landing.howLabel">How it works</p>
+    <h2 data-i18n="landing.howTitle">3ステップで始める</h2>
+    <p data-i18n="landing.howDesc">難しい設定は不要。すぐに使い始められます。</p>
   </div>
   <div class="steps">
     <div class="step">
       <div class="step-number">1</div>
-      <h3>アカウント登録</h3>
-      <p>メールアドレスで無料アカウントを作成。30秒で完了します。</p>
+      <h3 data-i18n="landing.step1Title">アカウント登録</h3>
+      <p data-i18n="landing.step1Desc">メールアドレスで無料アカウントを作成。30秒で完了します。</p>
     </div>
     <div class="step">
       <div class="step-number">2</div>
-      <h3>APIキーを設定</h3>
-      <p>Google Cloud ConsoleでAPIキーを取得し、設定画面から登録。</p>
+      <h3 data-i18n="landing.step2Title">APIキーを設定</h3>
+      <p data-i18n="landing.step2Desc">Google Cloud ConsoleでAPIキーを取得し、設定画面から登録。</p>
     </div>
     <div class="step">
       <div class="step-number">3</div>
-      <h3>検索開始</h3>
-      <p>キーワードとフィルターを設定して、最適な動画を発見しましょう。</p>
+      <h3 data-i18n="landing.step3Title">検索開始</h3>
+      <p data-i18n="landing.step3Desc">キーワードとフィルターを設定して、最適な動画を発見しましょう。</p>
     </div>
   </div>
 </section>
@@ -547,56 +563,56 @@ footer a:hover { color: var(--white); }
 <!-- PRICING -->
 <section id="pricing">
   <div class="section-header">
-    <p class="label">Pricing</p>
-    <h2>あなたに合ったプランを。</h2>
-    <p>個人利用から本格運用まで、柔軟にスケール。</p>
+    <p class="label" data-i18n="landing.pricingLabel">Pricing</p>
+    <h2 data-i18n="landing.pricingTitle">あなたに合ったプランを。</h2>
+    <p data-i18n="landing.pricingDesc">個人利用から本格運用まで、柔軟にスケール。</p>
   </div>
   <div class="pricing-grid">
     <div class="pricing-card">
-      <h3>Free</h3>
-      <div class="price">¥0<span>/月</span></div>
-      <p class="price-desc">個人利用に最適</p>
+      <h3 data-i18n="landing.freeTitle">Free</h3>
+      <div class="price">¥0<span data-i18n="landing.freePriceSuffix">/月</span></div>
+      <p class="price-desc" data-i18n="landing.freeDesc">個人利用に最適</p>
       <ul class="pricing-features">
-        <li>1日100回の検索</li>
-        <li>基本フィルター（言語・期間）</li>
-        <li>APIキー 1個</li>
-        <li>再生回数ランキング</li>
-        <li class="disabled">推定収益分析</li>
-        <li class="disabled">チャンネル分析</li>
-        <li class="disabled">優先サポート</li>
+        <li data-i18n="landing.freeF1">1日100回の検索</li>
+        <li data-i18n="landing.freeF2">基本フィルター（言語・期間）</li>
+        <li data-i18n="landing.freeF3">APIキー 1個</li>
+        <li data-i18n="landing.freeF4">再生回数ランキング</li>
+        <li class="disabled" data-i18n="landing.freeF5">推定収益分析</li>
+        <li class="disabled" data-i18n="landing.freeF6">チャンネル分析</li>
+        <li class="disabled" data-i18n="landing.freeF7">優先サポート</li>
       </ul>
-      <a href="/app?duration=short" class="pricing-btn">無料で始める</a>
+      <a href="/app?duration=short" class="pricing-btn" data-i18n="landing.freeBtn">無料で始める</a>
     </div>
     <div class="pricing-card popular">
-      <div class="pricing-badge">人気 No.1</div>
-      <h3>Pro</h3>
-      <div class="price">¥980<span>/月</span></div>
-      <p class="price-desc">クリエイター・マーケター向け</p>
+      <div class="pricing-badge" data-i18n="landing.proBadge">人気 No.1</div>
+      <h3 data-i18n="landing.proTitle">Pro</h3>
+      <div class="price">¥980<span data-i18n="landing.proPriceSuffix">/月</span></div>
+      <p class="price-desc" data-i18n="landing.proDesc">クリエイター・マーケター向け</p>
       <ul class="pricing-features">
-        <li>無制限検索</li>
-        <li>全フィルター利用可能</li>
-        <li>APIキー 無制限</li>
-        <li>再生回数ランキング</li>
-        <li>推定収益分析</li>
-        <li>チャンネル分析</li>
-        <li class="disabled">優先サポート</li>
+        <li data-i18n="landing.proF1">無制限検索</li>
+        <li data-i18n="landing.proF2">全フィルター利用可能</li>
+        <li data-i18n="landing.proF3">APIキー 無制限</li>
+        <li data-i18n="landing.proF4">再生回数ランキング</li>
+        <li data-i18n="landing.proF5">推定収益分析</li>
+        <li data-i18n="landing.proF6">チャンネル分析</li>
+        <li class="disabled" data-i18n="landing.proF7">優先サポート</li>
       </ul>
-      <a href="/app?duration=short" class="pricing-btn">Proを始める</a>
+      <a href="/app?duration=short" class="pricing-btn" data-i18n="landing.proBtn">Proを始める</a>
     </div>
     <div class="pricing-card">
-      <h3>Enterprise</h3>
-      <div class="price">要相談</div>
-      <p class="price-desc">チーム・企業向け</p>
+      <h3 data-i18n="landing.entTitle">Enterprise</h3>
+      <div class="price" data-i18n="landing.entPrice">要相談</div>
+      <p class="price-desc" data-i18n="landing.entDesc">チーム・企業向け</p>
       <ul class="pricing-features">
-        <li>全Pro機能</li>
-        <li>チームメンバー管理</li>
-        <li>APIキー 無制限</li>
-        <li>カスタムダッシュボード</li>
-        <li>データエクスポート（CSV）</li>
-        <li>SLA保証</li>
-        <li>優先サポート</li>
+        <li data-i18n="landing.entF1">全Pro機能</li>
+        <li data-i18n="landing.entF2">チームメンバー管理</li>
+        <li data-i18n="landing.entF3">APIキー 無制限</li>
+        <li data-i18n="landing.entF4">カスタムダッシュボード</li>
+        <li data-i18n="landing.entF5">データエクスポート（CSV）</li>
+        <li data-i18n="landing.entF6">SLA保証</li>
+        <li data-i18n="landing.entF7">優先サポート</li>
       </ul>
-      <a href="/contact" class="pricing-btn">お問い合わせ</a>
+      <a href="/contact" class="pricing-btn" data-i18n="landing.entBtn">お問い合わせ</a>
     </div>
   </div>
 </section>
@@ -604,48 +620,48 @@ footer a:hover { color: var(--white); }
 <!-- FAQ -->
 <section id="faq">
   <div class="section-header">
-    <p class="label">FAQ</p>
-    <h2>よくある質問</h2>
+    <p class="label" data-i18n="landing.faqLabel">FAQ</p>
+    <h2 data-i18n="landing.faqTitle">よくある質問</h2>
   </div>
   <div class="faq-list">
     <div class="faq-item">
-      <div class="faq-q">APIキーは自分で用意する必要がありますか？</div>
-      <div class="faq-a">はい、YouTube Data API v3のAPIキーが必要です。Google Cloud Consoleから無料で取得できます。設定画面に取得手順のガイドも用意しています。</div>
+      <div class="faq-q" data-i18n="landing.faq1Q">APIキーは自分で用意する必要がありますか？</div>
+      <div class="faq-a" data-i18n="landing.faq1A">はい、YouTube Data API v3のAPIキーが必要です。Google Cloud Consoleから無料で取得できます。設定画面に取得手順のガイドも用意しています。</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">APIのクォータ制限はどうなりますか？</div>
-      <div class="faq-a">YouTube Data APIのデフォルトクォータは1日10,000ユニットです。VidScopeは複数APIキーの自動ローテーションに対応しているため、クォータを効率的に活用できます。</div>
+      <div class="faq-q" data-i18n="landing.faq2Q">APIのクォータ制限はどうなりますか？</div>
+      <div class="faq-a" data-i18n="landing.faq2A">YouTube Data APIのデフォルトクォータは1日10,000ユニットです。VidScopeは複数APIキーの自動ローテーションに対応しているため、クォータを効率的に活用できます。</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">無料プランに期限はありますか？</div>
-      <div class="faq-a">いいえ、無料プランに期限はありません。検索回数の制限はありますが、基本機能をずっとお使いいただけます。</div>
+      <div class="faq-q" data-i18n="landing.faq3Q">無料プランに期限はありますか？</div>
+      <div class="faq-a" data-i18n="landing.faq3A">いいえ、無料プランに期限はありません。検索回数の制限はありますが、基本機能をずっとお使いいただけます。</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">データは安全ですか？</div>
-      <div class="faq-a">VidScopeはユーザーデータを一切収集・保存しません。検索クエリはYouTube APIに直接送信され、サーバーにログとして残ることもありません。</div>
+      <div class="faq-q" data-i18n="landing.faq4Q">データは安全ですか？</div>
+      <div class="faq-a" data-i18n="landing.faq4A">VidScopeはユーザーデータを一切収集・保存しません。検索クエリはYouTube APIに直接送信され、サーバーにログとして残ることもありません。</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">プランの変更やキャンセルはできますか？</div>
-      <div class="faq-a">はい、いつでもプランの変更・キャンセルが可能です。日割り計算で返金対応いたします。</div>
+      <div class="faq-q" data-i18n="landing.faq5Q">プランの変更やキャンセルはできますか？</div>
+      <div class="faq-a" data-i18n="landing.faq5A">はい、いつでもプランの変更・キャンセルが可能です。日割り計算で返金対応いたします。</div>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
 <section class="cta-section">
-  <h2>さあ、始めましょう。</h2>
-  <p>VidScopeで、YouTube動画の検索体験を変える。</p>
-  <a href="/app?duration=short" class="btn-primary">🎬 無料で始める</a>
+  <h2 data-i18n="landing.ctaTitle">さあ、始めましょう。</h2>
+  <p data-i18n="landing.ctaDesc">VidScopeで、YouTube動画の検索体験を変える。</p>
+  <a href="/app?duration=short" class="btn-primary" data-i18n="landing.ctaBtn">🎬 無料で始める</a>
 </section>
 
 <!-- FOOTER -->
 <footer>
   <p style="margin-bottom: 12px;">
-    <a href="/privacy">プライバシーポリシー</a>
-    <a href="/terms">利用規約</a>
-    <a href="/contact">お問い合わせ</a>
+    <a href="/privacy" data-i18n="common.footer.privacy">プライバシーポリシー</a>
+    <a href="/terms" data-i18n="common.footer.terms">利用規約</a>
+    <a href="/contact" data-i18n="common.footer.contact">お問い合わせ</a>
   </p>
-  <p>© 2026 VidScope. All rights reserved.</p>
+  <p data-i18n="common.footer.copyright">© 2026 VidScope. All rights reserved.</p>
 </footer>
 
 <script>

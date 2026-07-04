@@ -124,6 +124,8 @@ def get_summary() -> dict:
         "searches_today": result.get("searches_today", 0),
         "active_sessions": get_active_sessions(),
         "pv_total": result.get("pv_total", 0),
+        "pv_week": result.get("pv_week", 0),
+        "pv_month": result.get("pv_month", 0),
     }
 
 

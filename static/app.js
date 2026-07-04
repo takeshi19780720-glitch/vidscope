@@ -1,3 +1,11 @@
+// --- i18n helper ---
+function t(key, params) {
+  return window.VidScopeI18n ? window.VidScopeI18n.t(key, params) : key;
+}
+function currentLocale() {
+  return window.VidScopeI18n ? window.VidScopeI18n.getLocale() : "ja-JP";
+}
+
 // --- 表示モード設定 ---
 const VIEW_MODE_KEY = "viewMode";
 const DEFAULT_VIEW_MODE = "card";
@@ -157,15 +165,16 @@ function getSystemTheme() {
 
 function applyTheme(theme) {
   const logo = document.querySelector(".title-logo");
+  const t = window.VidScopeI18n ? window.VidScopeI18n.t : (k) => k;
   if (theme === "light") {
     document.documentElement.setAttribute("data-theme", "light");
     themeToggleBtn.textContent = "☀️";
-    themeToggleBtn.title = "ダークモードに切替";
+    themeToggleBtn.title = t("common.themeToggleToDark");
     if (logo) logo.src = "/static/logo-vidscope-light.svg";
   } else {
     document.documentElement.removeAttribute("data-theme");
     themeToggleBtn.textContent = "🌙";
-    themeToggleBtn.title = "ライトモードに切替";
+    themeToggleBtn.title = t("common.themeToggleToLight");
     if (logo) logo.src = "/static/logo-vidscope.svg";
   }
 }
@@ -208,7 +217,7 @@ window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e
 function updateToggleAllBtn() {
   const allVisible = GRAPH_IDS.every((id) => getGraphVisible(id));
   const btn = document.getElementById("graph-toggle-all-btn");
-  if (btn) btn.textContent = allVisible ? "全グラフ非表示" : "全グラフ表示";
+  if (btn) btn.textContent = allVisible ? t("app.graphHideAll") : t("app.graphShowAll");
 }
 
 function applyGraphVisibility() {
@@ -218,7 +227,7 @@ function applyGraphVisibility() {
     if (!card || !btn) return;
     const visible = getGraphVisible(id);
     card.classList.toggle("is-hidden", !visible);
-    btn.textContent = visible ? "非表示" : "表示";
+    btn.textContent = visible ? t("app.graphHide") : t("app.graphShow");
     btn.classList.toggle("is-hidden", !visible);
   });
   updateToggleAllBtn();
@@ -375,8 +384,25 @@ const CATEGORY_NAME_TO_ID = Object.fromEntries(
   Object.entries(CATEGORY_MAP).map(([id, name]) => [name, id])
 );
 
+function getCategoryName(id) {
+  if (id === undefined || id === null || !CATEGORY_MAP[id]) return t("app.category.unknown");
+  return t(`app.category.${id}`);
+}
+function categoryIdFromName(name) {
+  return Object.keys(CATEGORY_MAP).find((id) => getCategoryName(id) === name);
+}
+function countryNameFromLang(lang) {
+  if (!lang) return t("app.category.unknown");
+  const key = `app.country.${lang}`;
+  const translated = t(key);
+  return translated === key ? lang.toUpperCase() : translated;
+}
+function weekdayName(day) {
+  return t(`app.weekday.${day}`);
+}
+
 function fmt(num) {
-  return new Intl.NumberFormat("ja-JP").format(num || 0);
+  return new Intl.NumberFormat(currentLocale()).format(num || 0);
 }
 
 function csvEscape(value) {
@@ -389,21 +415,21 @@ function csvEscape(value) {
 
 function buildCsvRows(items) {
   const header = [
-    "タイトル",
-    "チャンネル名",
-    "再生回数",
-    "いいね数",
-    "コメント数",
-    "登録者数",
-    "エンゲージメント率",
-    "動画の長さ(秒)",
-    "公開日",
-    "ジャンル",
-    "タグ",
-    "動画URL",
+    t("app.exportHeader.title"),
+    t("app.exportHeader.channel"),
+    t("app.exportHeader.views"),
+    t("app.exportHeader.likes"),
+    t("app.exportHeader.comments"),
+    t("app.exportHeader.subscribers"),
+    t("app.exportHeader.engagement"),
+    t("app.exportHeader.duration"),
+    t("app.exportHeader.published"),
+    t("app.exportHeader.genre"),
+    t("app.exportHeader.tags"),
+    t("app.exportHeader.url"),
   ];
   const rows = items.map((item) => {
-    const categoryName = CATEGORY_MAP[item.category_id] || "不明";
+    const catName = getCategoryName(item.category_id);
     return [
       item.title || "",
       item.channel_title || "",
@@ -414,7 +440,7 @@ function buildCsvRows(items) {
       (Number(item.engagement_rate || 0) * 100).toFixed(2) + "%",
       item.duration_seconds || 0,
       item.published_at || "",
-      categoryName,
+      catName,
       (item.tags || []).join("|"),
       item.video_url || "",
     ];
@@ -424,7 +450,7 @@ function buildCsvRows(items) {
 
 function exportCsv(items) {
   if (!items.length) {
-    statusEl.textContent = "エクスポート対象がありません。先に検索してください。";
+    statusEl.textContent = t("app.status.noExportData");
     return;
   }
   const csv = buildCsvRows(items);
@@ -441,17 +467,17 @@ function exportCsv(items) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  statusEl.textContent = `${items.length}件をCSVエクスポートしました`;
+  statusEl.textContent = t("app.status.csvExported", { count: items.length });
 }
 
 function exportXlsx(items) {
   if (!items.length) {
-    statusEl.textContent = "エクスポート対象がありません。先に検索してください。";
+    statusEl.textContent = t("app.status.noExportData");
     return;
   }
   const header = [
-    "タイトル", "チャンネル名", "再生回数", "いいね数", "コメント数",
-    "登録者数", "エンゲージメント率", "動画の長さ(秒)", "公開日", "ジャンル", "タグ", "動画URL",
+    t("app.exportHeader.title"), t("app.exportHeader.channel"), t("app.exportHeader.views"), t("app.exportHeader.likes"), t("app.exportHeader.comments"),
+    t("app.exportHeader.subscribers"), t("app.exportHeader.engagement"), t("app.exportHeader.duration"), t("app.exportHeader.published"), t("app.exportHeader.genre"), t("app.exportHeader.tags"), t("app.exportHeader.url"),
   ];
   const rows = items.map((item) => [
     item.title || "",
@@ -463,41 +489,77 @@ function exportXlsx(items) {
     Number(item.engagement_rate || 0) * 100,
     item.duration_seconds || 0,
     item.published_at || "",
-    CATEGORY_MAP[item.category_id] || "不明",
+    getCategoryName(item.category_id),
     (item.tags || []).join("|"),
     item.video_url || "",
   ]);
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "検索結果");
+  XLSX.utils.book_append_sheet(wb, ws, t("app.xlsxSheetName"));
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   XLSX.writeFile(wb, `youtube_research_${timestamp}.xlsx`);
-  statusEl.textContent = `${items.length}件をExcelエクスポートしました`;
+  statusEl.textContent = t("app.status.xlsxExported", { count: items.length });
 }
 
 function formatViewCount(n) {
-  if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, "") + "億";
-  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
-  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "千";
+  const lang = window.VidScopeI18n && window.VidScopeI18n.getLang ? window.VidScopeI18n.getLang() : "ja";
+  if (lang === "en") {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(n);
+  }
+  if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, "") + t("app.units.oku");
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + t("app.units.man");
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + t("app.units.sen");
   return String(n);
+}
+
+// 再生回数グラフの単位（言語ごとにスケール・ラベルを決定）
+function getViewUnitInfo(max) {
+  const lang = window.VidScopeI18n && window.VidScopeI18n.getLang ? window.VidScopeI18n.getLang() : "ja";
+  if (lang === "en") {
+    if (max >= 1000000) return { unit: 1000000, label: "M", decimal: true };
+    return { unit: 1000, label: "K", decimal: false };
+  }
+  if (max >= 100000000) return { unit: 100000000, label: t("app.units.oku"), decimal: true };
+  return { unit: 10000, label: t("app.units.man"), decimal: false };
+}
+
+// 再生回数の固定ビンラベルを言語に応じて生成（比較モードのグラフ用）
+function buildViewBinLabel(min, max) {
+  const lang = window.VidScopeI18n && window.VidScopeI18n.getLang ? window.VidScopeI18n.getLang() : "ja";
+  const fmt = (n) => {
+    if (lang === "en") {
+      if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + "M";
+      if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + "K";
+      return String(n);
+    }
+    if (n >= 100000000) return (n / 100000000).toFixed(n % 100000000 === 0 ? 0 : 1) + t("app.units.oku");
+    if (n >= 10000) return (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + t("app.units.man");
+    if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + t("app.units.sen");
+    return String(n);
+  };
+  if (max === Infinity) return `${fmt(min)}${lang === "en" ? "+" : "以上"}`;
+  if (min === 0) return `0-${fmt(max)}`;
+  return `${fmt(min)}-${fmt(max)}`;
+}
+
+// --- 再生回数分布の固定ビン定義（境界値。ラベルは buildViewBinLabel で生成） ---
+function getViewBins() {
+  const bounds = [0, 1000, 10000, 100000, 500000, 1000000, 5000000, 10000000, 100000000, Infinity];
+  const bins = [];
+  for (let i = 0; i < bounds.length - 1; i++) {
+    bins.push({ label: buildViewBinLabel(bounds[i], bounds[i + 1]), min: bounds[i], max: bounds[i + 1] });
+  }
+  return bins;
 }
 
 function createViewHistogram(values) {
   if (!values.length) return { labels: [], counts: [], ranges: [] };
   // 固定の区間で分類
-  const bins = [
-    { label: "0-1千", min: 0, max: 1000 },
-    { label: "1千-1万", min: 1000, max: 10000 },
-    { label: "1万-10万", min: 10000, max: 100000 },
-    { label: "10万-50万", min: 100000, max: 500000 },
-    { label: "50万-100万", min: 500000, max: 1000000 },
-    { label: "100万-500万", min: 1000000, max: 5000000 },
-    { label: "500万-1000万", min: 5000000, max: 10000000 },
-    { label: "1000万-1億", min: 10000000, max: 100000000 },
-    { label: "1億以上", min: 100000000, max: Infinity },
-  ];
+  const bins = getViewBins();
   const counts = bins.map(() => 0);
   values.forEach((v) => {
     for (let i = 0; i < bins.length; i++) {
@@ -584,7 +646,7 @@ function renderTrendCharts(items) {
 
   const categoryCounts = {};
   items.forEach((item) => {
-    const key = CATEGORY_MAP[item.category_id] || "不明";
+    const key = getCategoryName(item.category_id);
     categoryCounts[key] = (categoryCounts[key] || 0) + 1;
   });
   const categoryLabels = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
@@ -600,12 +662,12 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "カテゴリ", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = categoryLabels[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -637,7 +699,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "タグ", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisTag"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -652,14 +714,15 @@ function renderTrendCharts(items) {
   // 再生回数分布（単位自動切り替え）
   const viewValues = items.map((i) => Number(i.view_count || 0));
   const viewMax = Math.max(...viewValues, 0);
-  const viewUnit = viewMax >= 100000000 ? 100000000 : 10000;
-  const viewUnitLabel = viewMax >= 100000000 ? "億" : "万";
+  const viewUnitInfo = getViewUnitInfo(viewMax);
+  const viewUnit = viewUnitInfo.unit;
+  const viewUnitLabel = viewUnitInfo.label;
   const viewHist = createHistogram(viewValues.map((v) => v / viewUnit), 8);
   // ラベルを単位表記に
   viewHist.labels = viewHist.labels.map((l) => {
     const [a, b] = l.split("-");
     const val = Number(b);
-    return `~${viewMax >= 100000000 ? val.toFixed(1) : Math.round(val)}${viewUnitLabel}`;
+    return `~${viewUnitInfo.decimal ? val.toFixed(1) : Math.round(val)}${viewUnitLabel}`;
   });
   viewHist.labels.reverse();
   viewHist.counts.reverse();
@@ -675,7 +738,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "再生回数レンジ", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisViewRange"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -705,7 +768,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "エンゲージメント率レンジ", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisEngRange"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -718,16 +781,10 @@ function renderTrendCharts(items) {
   });
 
   // 国別分布（言語から推定）
-  const LANG_TO_COUNTRY = {
-    "ja": "日本", "en": "英語圏", "ko": "韓国", "zh": "中国",
-    "es": "スペイン語圏", "pt": "ポルトガル語圏", "hi": "インド",
-    "fr": "フランス語圏", "de": "ドイツ語圏", "ar": "アラビア語圏",
-    "ru": "ロシア", "id": "インドネシア", "th": "タイ", "vi": "ベトナム",
-  };
   const countryCounts = {};
   items.forEach((item) => {
     const lang = (item.default_audio_language || item.default_language || "").toLowerCase().split("-")[0];
-    const country = LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+    const country = countryNameFromLang(lang);
     countryCounts[country] = (countryCounts[country] || 0) + 1;
   });
   const countryLabels = Object.keys(countryCounts).sort((a, b) => countryCounts[b] - countryCounts[a]);
@@ -743,7 +800,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "国・言語", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisCountryLang"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -779,7 +836,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "時間帯", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisHour"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -793,7 +850,7 @@ function renderTrendCharts(items) {
         x: {
           ticks: { color: tc },
           grid: { color: gc },
-          title: { display: true, text: "件数", color: tc },
+          title: { display: true, text: t("app.chart.axisCount"), color: tc },
         },
         y: {
           ticks: {
@@ -803,23 +860,17 @@ function renderTrendCharts(items) {
             }
           },
           grid: { color: gc },
-          title: { display: true, text: "時間帯", color: tc },
+          title: { display: true, text: t("app.chart.axisHour"), color: tc },
         },
       },
     },
   });
 
   // --- 国別再生回数分布 ---
-  const LANG_TO_COUNTRY2 = {
-    "ja": "日本", "en": "英語圏", "ko": "韓国", "zh": "中国",
-    "es": "スペイン語圏", "pt": "ポルトガル語圏", "hi": "インド",
-    "fr": "フランス語圏", "de": "ドイツ語圏", "ar": "アラビア語圏",
-    "ru": "ロシア", "id": "インドネシア", "th": "タイ", "vi": "ベトナム",
-  };
   const countryViewMap = {};
   items.forEach((item) => {
     const lang = (item.default_audio_language || item.default_language || "").toLowerCase().split("-")[0];
-    const country = LANG_TO_COUNTRY2[lang] || (lang ? lang.toUpperCase() : "不明");
+    const country = countryNameFromLang(lang);
     countryViewMap[country] = (countryViewMap[country] || 0) + Number(item.view_count || 0);
   });
   const countryViewLabels = Object.keys(countryViewMap).sort((a, b) => countryViewMap[b] - countryViewMap[a]);
@@ -835,7 +886,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("再生回数合計（万回）", "国・言語", "y"),
+      ...chartOptions(t("app.chart.axisViewSumMan"), t("app.chart.axisCountryLang"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -850,7 +901,7 @@ function renderTrendCharts(items) {
   // --- カテゴリ別再生回数分布 ---
   const categoryViewMap = {};
   items.forEach((item) => {
-    const key = CATEGORY_MAP[item.category_id] || "不明";
+    const key = getCategoryName(item.category_id);
     categoryViewMap[key] = (categoryViewMap[key] || 0) + Number(item.view_count || 0);
   });
   const categoryViewLabels = Object.keys(categoryViewMap).sort((a, b) => categoryViewMap[b] - categoryViewMap[a]);
@@ -866,12 +917,12 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("再生回数合計（万回）", "カテゴリ", "y"),
+      ...chartOptions(t("app.chart.axisViewSumMan"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = categoryViewLabels[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -884,7 +935,7 @@ function renderTrendCharts(items) {
   // --- カテゴリ別推定収益 ---
   const categoryRevenueMap = {};
   items.forEach((item) => {
-    const key = CATEGORY_MAP[item.category_id] || "不明";
+    const key = getCategoryName(item.category_id);
     const isShort = (item.duration_seconds || 0) <= 180;
     const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(item.category_id);
     const revenue = Math.round((Number(item.view_count || 0) * cpm) / 1000);
@@ -903,12 +954,12 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("推定収益合計（千円）", "カテゴリ", "y"),
+      ...chartOptions(t("app.chart.axisRevenueSum"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = categoryRevenueLabels[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -926,7 +977,7 @@ function renderTrendCharts(items) {
       weekdayCounts[day]++;
     }
   });
-  const weekdayLabels = ["日", "月", "火", "水", "木", "金", "土"].reverse();
+  const weekdayLabels = [0, 1, 2, 3, 4, 5, 6].map(weekdayName).reverse();
   weekdayCounts.reverse();
 
   charts.weekday = new Chart(weekdayChartCanvas, {
@@ -939,7 +990,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "曜日", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisWeekday"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -989,7 +1040,7 @@ function renderTrendCharts(items) {
       }],
     },
     options: {
-      ...chartOptions("件数", "ワード", "y"),
+      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisWord"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -1006,8 +1057,9 @@ function renderTrendCharts(items) {
   const tcCorr = isLightCorr ? "#111111" : "#f1f1f1";
   const gcCorr = isLightCorr ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
   const corrViewMax = Math.max(...items.map((i) => Number(i.view_count || 0)), 0);
-  const corrViewUnit = corrViewMax >= 100000000 ? 100000000 : 10000;
-  const corrViewUnitLabel = corrViewMax >= 100000000 ? "億" : "万";
+  const corrViewUnitInfo = getViewUnitInfo(corrViewMax);
+  const corrViewUnit = corrViewUnitInfo.unit;
+  const corrViewUnitLabel = corrViewUnitInfo.label;
   const correlationData = items.map((item) => ({
     x: Math.round((item.duration_seconds || 0) / 60),
     y: Math.round((item.view_count || 0) / corrViewUnit),
@@ -1045,7 +1097,11 @@ function renderTrendCharts(items) {
           callbacks: {
             label: function(context) {
               const raw = context.raw;
-              return [`タイトル: ${raw.title}`, `長さ: ${raw.x}分`, `再生回数: ${corrViewMax >= 100000000 ? raw.y.toFixed(1) : raw.y}`];
+              return [
+                t("app.chart.tooltipTitle", { value: raw.title }),
+                t("app.chart.tooltipLength", { value: raw.x }),
+                t("app.chart.tooltipViews", { value: corrViewUnitInfo.decimal ? raw.y.toFixed(1) : raw.y }),
+              ];
             },
           },
         },
@@ -1054,12 +1110,12 @@ function renderTrendCharts(items) {
         x: {
           ticks: { color: tcCorr },
           grid: { color: gcCorr },
-          title: { display: true, text: "動画の長さ（分）", color: tcCorr },
+          title: { display: true, text: t("app.chart.axisDurationMin"), color: tcCorr },
         },
         y: {
           ticks: { color: tcCorr, callback: function(value) { return value.toFixed(1) + corrViewUnitLabel; } },
           grid: { color: gcCorr },
-          title: { display: true, text: "再生回数", color: tcCorr },
+          title: { display: true, text: t("app.chart.axisViews"), color: tcCorr },
         },
       },
     },
@@ -1121,7 +1177,7 @@ function renderTop10Results(items) {
     return `
       <article class="top10-card">
         <div class="top10-rank">${index + 1}</div>
-        <div class="top10-thumb-wrap thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="動画をプレビュー">
+        <div class="top10-thumb-wrap thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="${t("app.card.previewAria")}">
           <img src="${item.thumbnail_url}" alt="${item.title}" loading="lazy" />
           <span class="play-icon-overlay top10-play-icon" aria-hidden="true">&#9654;</span>
         </div>
@@ -1159,23 +1215,23 @@ function renderResults(items) {
 function renderListResults(items) {
   const resultsEl = document.getElementById("results");
   if (!items.length) {
-    resultsEl.innerHTML = "<p>結果がありませんでした。</p>";
+    resultsEl.innerHTML = `<p>${t("app.status.noResults")}</p>`;
     return;
   }
 
   const rows = items.map((item) => {
-    const published = new Date(item.published_at).toLocaleDateString("ja-JP");
+    const published = new Date(item.published_at).toLocaleDateString(currentLocale());
     const engagementRate = Number(item.engagement_rate || 0);
     const isFav = isFavorite(item.video_url);
     const videoId = (item.video_url || "").replace("https://www.youtube.com/watch?v=", "");
     const isShort = (item.duration_seconds || 0) <= 180;
     const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(item.category_id);
     const revenueStr = formatRevenue(Number(item.view_count || 0), cpm);
-    const categoryName = CATEGORY_MAP[item.category_id] || "不明";
+    const categoryName = getCategoryName(item.category_id);
     return `
       <tr class="list-row" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}">
         <td class="list-col-thumb">
-          <div class="list-thumb-wrap thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="動画をプレビュー">
+          <div class="list-thumb-wrap thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="${t("app.card.previewAria")}">
             <img src="${item.thumbnail_url}" alt="${item.title}" loading="lazy" width="80" height="45" />
             <span class="play-icon-overlay list-play-icon" aria-hidden="true">&#9654;</span>
           </div>
@@ -1190,7 +1246,7 @@ function renderListResults(items) {
         <td class="list-col-subs">${formatViewCount(item.subscriber_count)}</td>
         <td class="list-col-views">${formatViewCount(item.view_count)}</td>
         <td class="list-col-eng">${engagementRate.toFixed(1)}%</td>
-        <td class="list-col-duration">${item.duration_seconds ? Math.floor(item.duration_seconds/60) + '分' + (item.duration_seconds%60) + '秒' : '-'}</td>
+        <td class="list-col-duration">${item.duration_seconds ? t("app.list.durationValue", { m: Math.floor(item.duration_seconds/60), s: item.duration_seconds%60 }) : '-'}</td>
         <td class="list-col-date">${published}</td>
         <td class="list-col-revenue"><span class="revenue-badge">${revenueStr}</span></td>
       </tr>
@@ -1210,16 +1266,16 @@ function renderListResults(items) {
       <table class="list-table">
         <thead>
           <tr>
-            <th class="list-col-thumb">サムネイル</th>
-            <th class="list-col-title">タイトル</th>
-            <th class="list-col-channel">チャンネル</th>
-            <th class="list-col-genre">ジャンル</th>
-            ${thSort('subscriber_count', '登録者数', 'list-col-subs')}
-            ${thSort('view_count', '再生回数', 'list-col-views')}
-            ${thSort('engagement_rate', 'ENG率', 'list-col-eng')}
-            ${thSort('duration_seconds', '長さ', 'list-col-duration')}
-            ${thSort('published_at', '公開日', 'list-col-date')}
-            ${thSort('revenue', '推定収益', 'list-col-revenue')}
+            <th class="list-col-thumb">${t("app.list.thumbnail")}</th>
+            <th class="list-col-title">${t("app.list.title")}</th>
+            <th class="list-col-channel">${t("app.list.channel")}</th>
+            <th class="list-col-genre">${t("app.list.genre")}</th>
+            ${thSort('subscriber_count', t("app.list.subscribers"), 'list-col-subs')}
+            ${thSort('view_count', t("app.list.views"), 'list-col-views')}
+            ${thSort('engagement_rate', t("app.list.engRate"), 'list-col-eng')}
+            ${thSort('duration_seconds', t("app.list.duration"), 'list-col-duration')}
+            ${thSort('published_at', t("app.list.published"), 'list-col-date')}
+            ${thSort('revenue', t("app.list.revenue"), 'list-col-revenue')}
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1248,7 +1304,7 @@ function renderListResults(items) {
       if (item) toggleFavorite(item);
       const isFav = isFavorite(`https://www.youtube.com/watch?v=${videoId}`);
       btn.textContent = isFav ? "★" : "☆";
-      btn.title = isFav ? "お気に入りを解除" : "お気に入りに追加";
+      btn.title = isFav ? t("app.favoritesRemoveTooltip") : t("app.favoritesAddTooltip");
       btn.classList.toggle("fav-btn--active", isFav);
       renderFavorites();
     });
@@ -1278,16 +1334,16 @@ function renderListResults(items) {
 function renderCardResults(items) {
   const resultsEl = document.getElementById("results");
   if (!items.length) {
-    resultsEl.innerHTML = "<p>結果がありませんでした。</p>";
+    resultsEl.innerHTML = `<p>${t("app.status.noResults")}</p>`;
     return;
   }
 
   resultsEl.innerHTML = items
     .map((item) => {
       const tags = (item.tags || []).slice(0, 8).join(", ");
-      const published = new Date(item.published_at).toLocaleString("ja-JP");
+      const published = new Date(item.published_at).toLocaleString(currentLocale());
       const engagementRate = Number(item.engagement_rate || 0);
-      const categoryName = CATEGORY_MAP[item.category_id] || "不明";
+      const categoryName = getCategoryName(item.category_id);
       const isFav = isFavorite(item.video_url);
       const videoId = (item.video_url || "").replace("https://www.youtube.com/watch?v=", "");
       // ショート動画（3分以下）はショートCPM、それ以外はジャンル別CPM
@@ -1297,24 +1353,24 @@ function renderCardResults(items) {
       return `
         <article class="card">
           <div class="card-thumb-wrap">
-            <div class="thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="動画をプレビュー">
+            <div class="thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="${t("app.card.previewAria")}">
               <img src="${item.thumbnail_url}" alt="${item.title}" loading="lazy" width="320" height="180" />
               <span class="play-icon-overlay" aria-hidden="true">&#9654;</span>
             </div>
-            <button class="fav-btn${isFav ? " fav-btn--active" : ""}" data-video-id="${videoId}" title="${isFav ? "お気に入りを解除" : "お気に入りに追加"}">${isFav ? "★" : "☆"}</button>
+            <button class="fav-btn${isFav ? " fav-btn--active" : ""}" data-video-id="${videoId}" title="${isFav ? t("app.favoritesRemoveTooltip") : t("app.favoritesAddTooltip")}">${isFav ? "★" : "☆"}</button>
           </div>
           <div class="meta">
             <a class="title" href="${item.video_url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-            <div><button class="channel-link" data-channel-id="${item.channel_id || ""}">${item.channel_title}</button> / 公開日: ${published} / ジャンル: ${categoryName}</div>
+            <div><button class="channel-link" data-channel-id="${item.channel_id || ""}">${item.channel_title}</button> / ${t("app.card.publishedLabel")}: ${published} / ${t("app.card.genreLabel")}: ${categoryName}</div>
             <div class="stats">
-              再生回数: ${formatViewCount(item.view_count)} ・ いいね: ${fmt(item.like_count)} ・ コメント: ${fmt(item.comment_count)}
-              <span class="revenue-badge" title="推定収益（参考値）: 再生回数 × CPM(${cpm}円) ÷ 1000">推定収益: ${revenueStr}<span class="revenue-note">※参考値</span></span>
+              ${t("app.card.viewsLabel")}: ${formatViewCount(item.view_count)} ・ ${t("app.card.likesLabel")}: ${fmt(item.like_count)} ・ ${t("app.card.commentsLabel")}: ${fmt(item.comment_count)}
+              <span class="revenue-badge" title="${t("app.card.revenueTooltip", { cpm })}">${t("app.card.revenueLabel")}: ${revenueStr}<span class="revenue-note">${t("app.card.revenueNote")}</span></span>
             </div>
             <div class="stats">
-              登録者数: ${fmt(item.subscriber_count)} ・ エンゲージメント率: ${engagementRate.toFixed(1)}% ・ 長さ: ${Math.floor((item.duration_seconds||0)/60)}分${(item.duration_seconds||0)%60}秒
+              ${t("app.card.subscribersLabel")}: ${fmt(item.subscriber_count)} ・ ${t("app.card.engagementLabel")}: ${engagementRate.toFixed(1)}% ・ ${t("app.card.durationLabel")}: ${Math.floor((item.duration_seconds||0)/60)}分${(item.duration_seconds||0)%60}秒
             </div>
             <div class="description">${(item.description || "").slice(0, 40)}${(item.description || "").length > 40 ? "…" : ""}</div>
-            <div class="tags">${tags ? `タグ: ${tags}` : "タグなし"}</div>
+            <div class="tags">${tags ? `${t("app.card.tagsLabel")}: ${tags}` : t("app.card.noTags")}</div>
           </div>
         </article>
       `;
@@ -1330,7 +1386,7 @@ function renderCardResults(items) {
       // Re-render just this button
       const isFav = isFavorite(`https://www.youtube.com/watch?v=${videoId}`);
       btn.textContent = isFav ? "★" : "☆";
-      btn.title = isFav ? "お気に入りを解除" : "お気に入りに追加";
+      btn.title = isFav ? t("app.favoritesRemoveTooltip") : t("app.favoritesAddTooltip");
       btn.classList.toggle("fav-btn--active", isFav);
       renderFavorites();
     });
@@ -1426,15 +1482,9 @@ function applyEngagementFilter(items) {
 
   // 国フィルター（グラフクリック）
   if (chartFilter.country) {
-    const LANG_TO_COUNTRY = {
-      "ja": "日本", "en": "英語圏", "ko": "韓国", "zh": "中国",
-      "es": "スペイン語圏", "pt": "ポルトガル語圏", "hi": "インド",
-      "fr": "フランス語圏", "de": "ドイツ語圏", "ar": "アラビア語圏",
-      "ru": "ロシア", "id": "インドネシア", "th": "タイ", "vi": "ベトナム",
-    };
     filtered = filtered.filter((item) => {
       const lang = (item.default_audio_language || item.default_language || "").toLowerCase().split("-")[0];
-      const country = LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+      const country = countryNameFromLang(lang);
       return country === chartFilter.country;
     });
   }
@@ -1482,18 +1532,17 @@ function applyEngagementFilter(items) {
 function rerenderWithEngagementFilter() {
   const filtered = applyEngagementFilter(latestItems);
   const filters = [];
-  if (chartFilter.tag) filters.push(`タグ: ${chartFilter.tag}`);
-  if (chartFilter.viewRange) filters.push(`再生回数: ${chartFilter.viewRange}`);
-  if (chartFilter.engRange) filters.push(`エンゲージメント率: ${chartFilter.engRange}`);
-  if (chartFilter.country) filters.push(`国: ${chartFilter.country}`);
+  if (chartFilter.tag) filters.push(t("app.chartFilter.tag", { value: chartFilter.tag }));
+  if (chartFilter.viewRange) filters.push(t("app.chartFilter.viewRange", { value: chartFilter.viewRange }));
+  if (chartFilter.engRange) filters.push(t("app.chartFilter.engRange", { value: chartFilter.engRange }));
+  if (chartFilter.country) filters.push(t("app.chartFilter.country", { value: chartFilter.country }));
   if (chartFilter.weekday !== null) {
-    const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
-    filters.push(`曜日: ${WEEKDAY_NAMES[chartFilter.weekday]}`);
+    filters.push(t("app.chartFilter.weekday", { value: weekdayName(chartFilter.weekday) }));
   }
-  if (chartFilter.hour !== null) filters.push(`時間帯: ${chartFilter.hour}時`);
-  if (chartFilter.titleWord) filters.push(`タイトル: ${chartFilter.titleWord}`);
+  if (chartFilter.hour !== null) filters.push(t("app.chartFilter.hour", { value: chartFilter.hour }));
+  if (chartFilter.titleWord) filters.push(t("app.chartFilter.titleWord", { value: chartFilter.titleWord }));
   const filterText = filters.length ? ` [${filters.join(" / ")}]` : "";
-  statusEl.textContent = `${filtered.length}件表示中（取得: ${latestItems.length}件）${filterText}`;
+  statusEl.textContent = t("app.status.resultsShown", { shown: filtered.length, total: latestItems.length, filterText });
   renderResults(filtered);
   renderTrendCharts(filtered);
 }
@@ -1513,7 +1562,7 @@ async function runSearch(event) {
 
   // キーワードもフィルターも未指定でも検索可能（グローバル人気動画を表示）
 
-  statusEl.textContent = "検索中...";
+  statusEl.textContent = t("app.status.searching");
   resultsEl.innerHTML = "";
   document.getElementById("search-loading").style.display = "flex";
 
@@ -1531,7 +1580,7 @@ async function runSearch(event) {
         showQuotaAlert();
         return;
       }
-      throw new Error(data.detail || "検索に失敗しました");
+      throw new Error(data.detail || t("app.status.searchFailed"));
     }
     latestItems = data.items || [];
     chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
@@ -1598,7 +1647,7 @@ async function fetchKeywordData(keyword, colorObj) {
       showQuotaAlert();
       throw new Error("quota");
     }
-    throw new Error(data.detail || "検索に失敗しました");
+    throw new Error(data.detail || t("app.status.searchFailed"));
   }
   return { keyword, color: colorObj, items: data.items || [] };
 }
@@ -1610,11 +1659,11 @@ async function runCompareSearch() {
   const keywords = [kw1, kw2, kw3].filter(Boolean);
 
   if (keywords.length < 2) {
-    statusEl.textContent = "比較モードは2つ以上のキーワードが必要です";
+    statusEl.textContent = t("app.status.compareNeedTwo");
     return;
   }
 
-  statusEl.textContent = "比較検索中...";
+  statusEl.textContent = t("app.status.comparing");
   resultsEl.innerHTML = "";
   document.getElementById("search-loading").style.display = "flex";
 
@@ -1634,7 +1683,8 @@ async function runCompareSearch() {
     renderResults(latestItems);
 
     const kwLabels = keywords.join(" vs ");
-    statusEl.textContent = `比較完了: ${kwLabels}（各キーワードの件数: ${results.map(r => r.items.length + "件").join(" / ")}）`;
+    const counts = results.map(r => t("app.status.compareCountUnit", { count: r.items.length })).join(" / ");
+    statusEl.textContent = t("app.status.compareComplete", { keywords: kwLabels, counts });
     keywords.forEach((kw) => { if (kw) addToHistory(kw); });
     fetchQuota();
   } catch (err) {
@@ -1668,21 +1718,21 @@ function renderComparisonSummary(dataArr) {
       <td><span class="compare-dot-inline" style="background:${color.label};"></span>${keyword}</td>
       <td>${formatViewCount(avgView)}</td>
       <td>${avgEng}%</td>
-      <td>${count}件</td>
+      <td>${t("app.compareSummary.countUnit", { count })}</td>
       <td>${avgRev}</td>
     </tr>`;
   }).join("");
 
   el.innerHTML = `
-    <p class="compare-summary-title">比較サマリー</p>
+    <p class="compare-summary-title">${t("app.compareSummary.title")}</p>
     <table class="compare-summary-table">
       <thead>
         <tr>
-          <th>キーワード</th>
-          <th>平均再生数</th>
-          <th>平均エンゲージメント率</th>
-          <th>動画数</th>
-          <th>推定平均収益</th>
+          <th>${t("app.compareSummary.keyword")}</th>
+          <th>${t("app.compareSummary.avgViews")}</th>
+          <th>${t("app.compareSummary.avgEngagement")}</th>
+          <th>${t("app.compareSummary.count")}</th>
+          <th>${t("app.compareSummary.avgRevenue")}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1705,7 +1755,7 @@ function renderComparisonCharts(dataArr) {
 
   // --- カテゴリ別 ---
   const allCats = [...new Set(
-    dataArr.flatMap((d) => d.items.map((i) => CATEGORY_MAP[i.category_id] || "不明"))
+    dataArr.flatMap((d) => d.items.map((i) => getCategoryName(i.category_id)))
   )].sort();
   charts.category = new Chart(categoryChartCanvas, {
     type: "bar",
@@ -1714,18 +1764,18 @@ function renderComparisonCharts(dataArr) {
       datasets: dataArr.map(({ keyword, color, items }) => ({
         label: keyword,
         data: allCats.map((cat) =>
-          items.filter((i) => (CATEGORY_MAP[i.category_id] || "不明") === cat).length
+          items.filter((i) => (getCategoryName(i.category_id)) === cat).length
         ),
         backgroundColor: color.solid,
       })),
     },
     options: {
-      ...multiChartOptions("件数", "カテゴリ", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = allCats[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -1765,7 +1815,7 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("件数", "タグ", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisTag"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -1778,19 +1828,7 @@ function renderComparisonCharts(dataArr) {
   });
 
   // --- 再生回数分布（固定ビン） ---
-  const VIEW_BINS = [
-    { label: "0-1千",     min: 0,        max: 1000 },
-    { label: "1千-1万",   min: 1000,     max: 10000 },
-    { label: "1万-10万",  min: 10000,    max: 100000 },
-    { label: "10万-50万", min: 100000,   max: 500000 },
-    { label: "50万-100万",min: 500000,   max: 1000000 },
-    { label: "100万-500万",min: 1000000, max: 5000000 },
-    { label: "500万-1千万",min: 5000000, max: 10000000 },
-    { label: "1千万-1億", min: 10000000, max: 100000000 },
-    { label: "1億以上",   min: 100000000,max: Infinity },
-  ];
-  const viewBinsAllMax = Math.max(...dataArr.flatMap(({ items }) => items.map((i) => Number(i.view_count || 0))), 0);
-  const viewBinsUnitLabel = viewBinsAllMax >= 100000000 ? "億" : "万";
+  const VIEW_BINS = getViewBins();
   const viewBinsReversed = [...VIEW_BINS].reverse();
   charts.view = new Chart(viewChartCanvas, {
     type: "bar",
@@ -1807,7 +1845,7 @@ function renderComparisonCharts(dataArr) {
         backgroundColor: color.solid,
       })),
     },
-    options: multiChartOptions("件数", "再生回数レンジ", "y"),
+    options: multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisViewRange"), "y"),
   });
 
   // --- エンゲージメント率分布（固定ビン） ---
@@ -1836,20 +1874,14 @@ function renderComparisonCharts(dataArr) {
         backgroundColor: color.solid,
       })),
     },
-    options: multiChartOptions("件数", "エンゲージメント率レンジ", "y"),
+    options: multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisEngRange"), "y"),
   });
 
   // --- 国別分布 ---
-  const LANG_TO_COUNTRY = {
-    "ja": "日本", "en": "英語圏", "ko": "韓国", "zh": "中国",
-    "es": "スペイン語圏", "pt": "ポルトガル語圏", "hi": "インド",
-    "fr": "フランス語圏", "de": "ドイツ語圏", "ar": "アラビア語圏",
-    "ru": "ロシア", "id": "インドネシア", "th": "タイ", "vi": "ベトナム",
-  };
   const allCountries = [...new Set(
     dataArr.flatMap((d) => d.items.map((i) => {
       const lang = (i.default_audio_language || i.default_language || "").toLowerCase().split("-")[0];
-      return LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+      return countryNameFromLang(lang);
     }))
   )].sort();
   charts.country = new Chart(countryChartCanvas, {
@@ -1860,7 +1892,7 @@ function renderComparisonCharts(dataArr) {
         const cc = {};
         items.forEach((i) => {
           const lang = (i.default_audio_language || i.default_language || "").toLowerCase().split("-")[0];
-          const country = LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+          const country = countryNameFromLang(lang);
           cc[country] = (cc[country] || 0) + 1;
         });
         return {
@@ -1871,7 +1903,7 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("件数", "国・言語", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisCountryLang"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -1902,7 +1934,7 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("件数", "時間帯", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisHour"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -1915,7 +1947,7 @@ function renderComparisonCharts(dataArr) {
         x: {
           ticks: { color: tc2 },
           grid: { color: gc2 },
-          title: { display: true, text: "件数", color: tc2 },
+          title: { display: true, text: t("app.chart.axisCount"), color: tc2 },
         },
         y: {
           ticks: {
@@ -1925,7 +1957,7 @@ function renderComparisonCharts(dataArr) {
             }
           },
           grid: { color: gc2 },
-          title: { display: true, text: "時間帯", color: tc2 },
+          title: { display: true, text: t("app.chart.axisHour"), color: tc2 },
         },
       },
     },
@@ -1935,7 +1967,7 @@ function renderComparisonCharts(dataArr) {
   const allCountriesView = [...new Set(
     dataArr.flatMap((d) => d.items.map((i) => {
       const lang = (i.default_audio_language || i.default_language || "").toLowerCase().split("-")[0];
-      return LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+      return countryNameFromLang(lang);
     }))
   )].sort();
   charts.countryView = new Chart(countryViewChartCanvas, {
@@ -1946,14 +1978,14 @@ function renderComparisonCharts(dataArr) {
         const m = {};
         items.forEach((i) => {
           const lang = (i.default_audio_language || i.default_language || "").toLowerCase().split("-")[0];
-          const c = LANG_TO_COUNTRY[lang] || (lang ? lang.toUpperCase() : "不明");
+          const c = countryNameFromLang(lang);
           m[c] = (m[c] || 0) + Number(i.view_count || 0);
         });
         return { label: keyword, data: allCountriesView.map((c) => Math.round((m[c] || 0) / 10000)), backgroundColor: color.solid };
       }),
     },
     options: {
-      ...multiChartOptions("再生回数合計（万回）", "国・言語", "y"),
+      ...multiChartOptions(t("app.chart.axisViewSumMan"), t("app.chart.axisCountryLang"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -1967,7 +1999,7 @@ function renderComparisonCharts(dataArr) {
 
   // --- カテゴリ別再生回数分布 ---
   const allCatsView = [...new Set(
-    dataArr.flatMap((d) => d.items.map((i) => CATEGORY_MAP[i.category_id] || "不明"))
+    dataArr.flatMap((d) => d.items.map((i) => getCategoryName(i.category_id)))
   )].sort();
   charts.categoryView = new Chart(categoryViewChartCanvas, {
     type: "bar",
@@ -1976,19 +2008,19 @@ function renderComparisonCharts(dataArr) {
       datasets: dataArr.map(({ keyword, color, items }) => {
         const m = {};
         items.forEach((i) => {
-          const k = CATEGORY_MAP[i.category_id] || "不明";
+          const k = getCategoryName(i.category_id);
           m[k] = (m[k] || 0) + Number(i.view_count || 0);
         });
         return { label: keyword, data: allCatsView.map((k) => Math.round((m[k] || 0) / 10000)), backgroundColor: color.solid };
       }),
     },
     options: {
-      ...multiChartOptions("再生回数合計（万回）", "カテゴリ", "y"),
+      ...multiChartOptions(t("app.chart.axisViewSumMan"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = allCatsView[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -2000,7 +2032,7 @@ function renderComparisonCharts(dataArr) {
 
   // --- カテゴリ別推定収益 ---
   const allCatsRev = [...new Set(
-    dataArr.flatMap((d) => d.items.map((i) => CATEGORY_MAP[i.category_id] || "不明"))
+    dataArr.flatMap((d) => d.items.map((i) => getCategoryName(i.category_id)))
   )].sort();
   charts.categoryRevenue = new Chart(categoryRevenueChartCanvas, {
     type: "bar",
@@ -2009,7 +2041,7 @@ function renderComparisonCharts(dataArr) {
       datasets: dataArr.map(({ keyword, color, items }) => {
         const m = {};
         items.forEach((i) => {
-          const k = CATEGORY_MAP[i.category_id] || "不明";
+          const k = getCategoryName(i.category_id);
           const isShort = (i.duration_seconds || 0) <= 180;
           const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(i.category_id);
           m[k] = (m[k] || 0) + Math.round((Number(i.view_count || 0) * cpm) / 1000);
@@ -2018,12 +2050,12 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("推定収益合計（千円）", "カテゴリ", "y"),
+      ...multiChartOptions(t("app.chart.axisRevenueSum"), t("app.chart.axisCategory"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedCategory = allCatsRev[index];
-          const categoryId = CATEGORY_NAME_TO_ID[clickedCategory];
+          const categoryId = categoryIdFromName(clickedCategory);
           if (categoryId) {
             categoryFilterInput.value = categoryId;
             runSearch(new Event("submit"));
@@ -2034,7 +2066,7 @@ function renderComparisonCharts(dataArr) {
   });
 
   // --- 曜日別投稿動画数 ---
-  const weekdayLabelsComp = ["日", "月", "火", "水", "木", "金", "土"].reverse();
+  const weekdayLabelsComp = [0, 1, 2, 3, 4, 5, 6].map(weekdayName).reverse();
   charts.weekday = new Chart(weekdayChartCanvas, {
     type: "bar",
     data: {
@@ -2049,7 +2081,7 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("件数", "曜日", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisWeekday"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -2100,7 +2132,7 @@ function renderComparisonCharts(dataArr) {
       }),
     },
     options: {
-      ...multiChartOptions("件数", "ワード", "y"),
+      ...multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisWord"), "y"),
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -2117,8 +2149,9 @@ function renderComparisonCharts(dataArr) {
   const tcComp = isLightComp ? "#111111" : "#f1f1f1";
   const gcComp = isLightComp ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
   const compCorrViewMax = Math.max(...dataArr.flatMap(({ items }) => items.map((i) => Number(i.view_count || 0))), 0);
-  const compCorrViewUnit = compCorrViewMax >= 100000000 ? 100000000 : 10000;
-  const compCorrViewUnitLabel = compCorrViewMax >= 100000000 ? "億" : "万";
+  const compCorrViewUnitInfo = getViewUnitInfo(compCorrViewMax);
+  const compCorrViewUnit = compCorrViewUnitInfo.unit;
+  const compCorrViewUnitLabel = compCorrViewUnitInfo.label;
   charts.correlation = new Chart(correlationChartCanvas, {
     type: "scatter",
     data: {
@@ -2156,7 +2189,11 @@ function renderComparisonCharts(dataArr) {
           callbacks: {
             label: function(context) {
               const raw = context.raw;
-              return [`[${context.dataset.label}] ${raw.title}`, `長さ: ${raw.x}分`, `再生回数: ${compCorrViewMax >= 100000000 ? raw.y.toFixed(1) : raw.y}`];
+              return [
+                `[${context.dataset.label}] ${raw.title}`,
+                t("app.chart.tooltipLength", { value: raw.x }),
+                t("app.chart.tooltipViews", { value: compCorrViewUnitInfo.decimal ? raw.y.toFixed(1) : raw.y }),
+              ];
             },
           },
         },
@@ -2165,12 +2202,12 @@ function renderComparisonCharts(dataArr) {
         x: {
           ticks: { color: tcComp },
           grid: { color: gcComp },
-          title: { display: true, text: "動画の長さ（分）", color: tcComp },
+          title: { display: true, text: t("app.chart.axisDurationMin"), color: tcComp },
         },
         y: {
           ticks: { color: tcComp, callback: function(value) { return value.toFixed(1) + compCorrViewUnitLabel; } },
           grid: { color: gcComp },
-          title: { display: true, text: "再生回数", color: tcComp },
+          title: { display: true, text: t("app.chart.axisViews"), color: tcComp },
         },
       },
     },
@@ -2179,7 +2216,7 @@ function renderComparisonCharts(dataArr) {
 }
 
 function showQuotaAlert() {
-  statusEl.textContent = "APIクォータの上限に達しました";
+  statusEl.textContent = t("app.status.quotaExceeded");
   const existing = document.getElementById("quota-alert");
   if (existing) existing.remove();
   const alert = document.createElement("div");
@@ -2187,11 +2224,11 @@ function showQuotaAlert() {
   alert.className = "quota-alert";
   alert.innerHTML = `
     <div class="quota-alert-content">
-      <h3>⚠️ APIクォータの上限に達しました</h3>
-      <p>YouTube Data APIの1日あたりの使用上限を超えました。<br>新しいAPIキーを追加すると検索を続行できます。</p>
+      <h3>${t("app.quotaAlert.heading")}</h3>
+      <p>${t("app.quotaAlert.message")}</p>
       <div class="quota-alert-buttons">
-        <button id="quota-add-key" class="youtube-btn">APIキーを追加する</button>
-        <button id="quota-dismiss" class="youtube-btn quota-dismiss-btn">閉じる</button>
+        <button id="quota-add-key" class="youtube-btn">${t("app.quotaAlert.addKeyBtn")}</button>
+        <button id="quota-dismiss" class="youtube-btn quota-dismiss-btn">${t("app.quotaAlert.dismissBtn")}</button>
       </div>
     </div>
   `;
@@ -2268,7 +2305,7 @@ function renderFavorites() {
             <span class="fav-item-channel">${fav.channel}</span>
           </div>
         </a>
-        <button class="fav-remove-btn" data-url="${fav.url}" title="削除">&#x2715;</button>
+        <button class="fav-remove-btn" data-url="${fav.url}" title="${t("app.favoritesRemoveBtn")}">&#x2715;</button>
       </div>`
     )
     .join("");
@@ -2283,7 +2320,7 @@ function renderFavorites() {
       const star = resultsEl.querySelector(`.fav-btn[data-video-id="${videoId}"]`);
       if (star) {
         star.textContent = "☆";
-        star.title = "お気に入りに追加";
+        star.title = t("app.favoritesAddTooltip");
         star.classList.remove("fav-btn--active");
       }
     });
@@ -2296,7 +2333,7 @@ clearFavoritesBtn.addEventListener("click", () => {
   // Reset all star buttons
   resultsEl.querySelectorAll(".fav-btn--active").forEach((btn) => {
     btn.textContent = "☆";
-    btn.title = "お気に入りに追加";
+    btn.title = t("app.favoritesAddTooltip");
     btn.classList.remove("fav-btn--active");
   });
 });
@@ -2350,11 +2387,11 @@ function renderHistory() {
     .map((item, idx) => {
       const f = item.filters || {};
       const tags = [];
-      if (f.publishedAfter) tags.push(`期間:${f.publishedAfter}`);
-      if (f.durationFilter) tags.push(`時間:${f.durationFilter}`);
-      if (f.categoryId) tags.push(`カテゴリ:${f.categoryId}`);
-      if (f.language) tags.push(`言語:${f.language}`);
-      if (f.region) tags.push(`地域:${f.region}`);
+      if (f.publishedAfter) tags.push(t("app.historyTag.period", { value: f.publishedAfter }));
+      if (f.durationFilter) tags.push(t("app.historyTag.duration", { value: f.durationFilter }));
+      if (f.categoryId) tags.push(t("app.historyTag.category", { value: f.categoryId }));
+      if (f.language) tags.push(t("app.historyTag.language", { value: f.language }));
+      if (f.region) tags.push(t("app.historyTag.region", { value: f.region }));
       const filterText = tags.length ? ` [${tags.join(", ")}]` : "";
       return `<button class="history-item" data-idx="${idx}">${item.date} - ${item.keyword}${filterText}</button>`;
     })
@@ -2429,7 +2466,7 @@ function renderKeywordRanking() {
       return `<li class="popular-keyword-item${rankClass}">
         <span class="popular-keyword-rank">${index + 1}</span>
         <button class="popular-keyword-btn" data-keyword="${keyword.replace(/"/g, "&quot;")}">${keyword}</button>
-        <span class="popular-keyword-badge">${count}回</span>
+        <span class="popular-keyword-badge">${t("app.popularKeywordCountUnit", { count })}</span>
       </li>`;
     })
     .join("");
@@ -2488,7 +2525,7 @@ async function loadKeys() {
     data.keys.forEach((key) => {
       const div = document.createElement("div");
       div.className = "key-item";
-      div.innerHTML = `<span>${key.masked}</span><button class="key-delete" data-index="${key.index}">削除</button>`;
+      div.innerHTML = `<span>${key.masked}</span><button class="key-delete" data-index="${key.index}">${t("app.status.keyDeleteBtn")}</button>`;
       keyListEl.appendChild(div);
     });
     keyListEl.querySelectorAll(".key-delete").forEach((btn) => {
@@ -2513,7 +2550,7 @@ async function loadKeys() {
     keyStatusEl.textContent = "";
   } catch (err) {
     keyStatusEl.className = "key-status error";
-    keyStatusEl.textContent = "キーの取得に失敗しました";
+    keyStatusEl.textContent = t("app.status.keysLoadFailed");
   }
 }
 
@@ -2542,7 +2579,7 @@ addKeyBtn.addEventListener("click", async () => {
     }
   } catch (err) {
     keyStatusEl.className = "key-status error";
-    keyStatusEl.textContent = "追加に失敗しました";
+    keyStatusEl.textContent = t("app.status.keyAddFailed");
   }
 });
 categoryFilterInput.addEventListener("change", () => { runSearch(new Event("submit")); });
@@ -2557,12 +2594,12 @@ if (cpmSaveBtn) {
     const val = Number(cpmInput.value);
     if (!val || val < 1 || val > 1000) {
       cpmStatusEl.className = "key-status error";
-      cpmStatusEl.textContent = "1〜1000の範囲で入力してください";
+      cpmStatusEl.textContent = t("app.status.cpmRangeError");
       return;
   }
   saveCpm(val);
   cpmStatusEl.className = "key-status";
-  cpmStatusEl.textContent = `CPMを ${val}円 に保存しました`;
+  cpmStatusEl.textContent = t("app.status.cpmSaved", { value: val });
   // 即座に表示に反映（再検索不要）
   const filtered = applyEngagementFilter(latestItems);
   renderResults(filtered);
@@ -2576,7 +2613,7 @@ function renderGenreCpmList() {
   if (!listEl) return;
   
   // CATEGORY_MAPのジャンル + その他・未分類
-  const allGenres = { ...CATEGORY_MAP, "other": "その他・未分類" };
+  const allGenres = { ...Object.fromEntries(Object.keys(CATEGORY_MAP).map((id) => [id, getCategoryName(id)])), "other": t("app.category.other") };
   
   listEl.innerHTML = Object.entries(allGenres).map(([id, name]) => {
     const currentVal = loadGenreCpm(id);
@@ -2584,7 +2621,7 @@ function renderGenreCpmList() {
     return `<div class="genre-cpm-row">
       <span class="genre-cpm-name">${name}</span>
       <input id="genre-cpm-${id}" type="number" min="1" max="100000" value="${currentVal}" data-default="${defaultVal}" />
-      <span class="cpm-unit">円</span>
+      <span class="cpm-unit">${t("app.modal.cpmUnit")}</span>
     </div>`;
   }).join("");
 }
@@ -2605,10 +2642,10 @@ document.getElementById("genre-cpm-save-btn").addEventListener("click", () => {
   });
   if (hasError) {
     statusEl.className = "key-status error";
-    statusEl.textContent = "全て1以上の値を入力してください";
+    statusEl.textContent = t("app.status.genreCpmError");
   } else {
     statusEl.className = "key-status";
-    statusEl.textContent = "ジャンル別CPMを保存しました";
+    statusEl.textContent = t("app.status.genreCpmSaved");
     const filtered = applyEngagementFilter(latestItems);
     renderResults(filtered);
     setTimeout(() => { statusEl.textContent = ""; }, 2000);
@@ -2620,7 +2657,7 @@ document.getElementById("genre-cpm-reset-btn").addEventListener("click", () => {
   renderGenreCpmList();
   const statusEl = document.getElementById("genre-cpm-status");
   statusEl.className = "key-status";
-  statusEl.textContent = "全てデフォルト値に戻しました";
+  statusEl.textContent = t("app.status.genreCpmReset");
   setTimeout(() => { statusEl.textContent = ""; }, 2000);
 });
 
@@ -2669,7 +2706,7 @@ function openVideoPreview(videoId, title, videoUrl) {
   // iframe を生成
   const iframe = document.createElement("iframe");
   iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-  iframe.title = title || "YouTube動画";
+  iframe.title = title || t("app.videoIframeTitle");
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
   iframe.allowFullscreen = true;
   iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;border:0;";
@@ -2763,7 +2800,7 @@ function closeVideoPreview() {
 async function openChannelModal(channelId) {
   const body = document.getElementById("channel-modal-body");
   channelModal.style.display = "flex";
-  body.innerHTML = '<div class="channel-loading">読み込み中...</div>';
+  body.innerHTML = `<div class="channel-loading">${t("app.modal.channelLoading")}</div>`;
   try {
     const [infoRes, videosRes] = await Promise.all([
       fetch(`/api/channel/${channelId}`),
@@ -2772,13 +2809,13 @@ async function openChannelModal(channelId) {
 
     if (!infoRes.ok) {
       const err = await infoRes.json();
-      throw new Error(err.detail || "チャンネル情報の取得に失敗しました");
+      throw new Error(err.detail || t("app.modal.channelFetchFailed"));
     }
     const info = await infoRes.json();
     const videos = videosRes.ok ? await videosRes.json() : [];
 
     const descShort = (info.description || "").slice(0, 100) + ((info.description || "").length > 100 ? "…" : "");
-    const publishedYear = info.published_at ? new Date(info.published_at).getFullYear() + "年" : "不明";
+    const publishedYear = info.published_at ? new Date(info.published_at).getFullYear() + t("app.modal.channelYearSuffix") : t("app.modal.channelUnknownYear");
 
     const videosHtml = videos.length
       ? videos.map((v) => `
@@ -2788,10 +2825,10 @@ async function openChannelModal(channelId) {
           </a>
           <div class="channel-video-info">
             <a class="channel-video-title" href="${v.video_url}" target="_blank" rel="noopener noreferrer">${v.title}</a>
-            <span class="channel-video-meta">再生回数: ${formatViewCount(v.view_count)} ・ ${new Date(v.published_at).toLocaleDateString("ja-JP")}</span>
+            <span class="channel-video-meta">${t("app.modal.channelViewCountLabel", { value: formatViewCount(v.view_count) })} ・ ${new Date(v.published_at).toLocaleDateString(currentLocale())}</span>
           </div>
         </div>`).join("")
-      : "<p style='color:#888;font-size:13px;'>動画情報を取得できませんでした。</p>";
+      : `<p style='color:#888;font-size:13px;'>${t("app.modal.channelVideosUnavailable")}</p>`;
 
     body.innerHTML = `
       <div class="channel-profile">
@@ -2804,25 +2841,25 @@ async function openChannelModal(channelId) {
       <div class="channel-stats-grid">
         <div class="channel-stat-box">
           <div class="channel-stat-value">${formatViewCount(info.subscriber_count)}</div>
-          <div class="channel-stat-label">登録者数</div>
+          <div class="channel-stat-label">${t("app.modal.channelSubscribers")}</div>
         </div>
         <div class="channel-stat-box">
           <div class="channel-stat-value">${formatViewCount(info.view_count)}</div>
-          <div class="channel-stat-label">総再生回数</div>
+          <div class="channel-stat-label">${t("app.modal.channelTotalViews")}</div>
         </div>
         <div class="channel-stat-box">
           <div class="channel-stat-value">${fmt(info.video_count)}</div>
-          <div class="channel-stat-label">動画数</div>
+          <div class="channel-stat-label">${t("app.modal.channelVideoCount")}</div>
         </div>
         <div class="channel-stat-box">
           <div class="channel-stat-value">${publishedYear}</div>
-          <div class="channel-stat-label">開設年</div>
+          <div class="channel-stat-label">${t("app.modal.channelFoundedYear")}</div>
         </div>
       </div>
       ${descShort ? `<div class="channel-description">${descShort}</div>` : ""}
-      <div class="channel-videos-title">最新動画</div>
+      <div class="channel-videos-title">${t("app.modal.channelLatestVideos")}</div>
       <div class="channel-videos-list">${videosHtml}</div>
-      <a class="channel-page-btn" href="${info.channel_url}" target="_blank" rel="noopener noreferrer">YouTubeでチャンネルを開く</a>
+      <a class="channel-page-btn" href="${info.channel_url}" target="_blank" rel="noopener noreferrer">${t("app.modal.channelOpenPageBtn")}</a>
     `;
   } catch (err) {
     body.innerHTML = `<div class="channel-error">${err.message}</div>`;

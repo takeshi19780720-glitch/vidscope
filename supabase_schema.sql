@@ -54,7 +54,9 @@ returns json language sql stable as $$
     'pv_today', (select count(*) from page_views where "timestamp" >= date_trunc('day', now())),
     'uv_today', (select count(distinct ip) from page_views where "timestamp" >= date_trunc('day', now())),
     'searches_today', (select count(*) from search_queries where "timestamp" >= date_trunc('day', now())),
-    'pv_total', (select count(*) from page_views)
+    'pv_total', (select count(*) from page_views),
+    'pv_week', (select count(*) from page_views where "timestamp" >= now() - interval '7 days'),
+    'pv_month', (select count(*) from page_views where "timestamp" >= now() - interval '30 days')
   );
 $$;
 

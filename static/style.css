@@ -1067,6 +1067,12 @@ button:hover {
 }
 
 @media (max-width: 600px) {
+  .container {
+    /* 600px以下は%指定だと余白が数px程度になり体感しづらいため、
+       固定pxで視認しやすい余白量に切り替える */
+    padding-left: 10px;
+    padding-right: 10px;
+  }
   .results {
     grid-template-columns: 1fr;
     padding: 8px 0 24px;

@@ -184,8 +184,10 @@ def _send_contact_email(entry: dict):
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {resend_key}"},
             json={
-                "from": "VidScope <onboarding@resend.dev>",
+                # send.vidscope.app はResendでドメイン認証済みの送信元
+                "from": "VidScope <reply@send.vidscope.app>",
                 "to": [notify_to],
+                "reply_to": entry.get('email'),
                 "subject": f"【VidScope】お問い合わせ: {entry.get('category', '一般')}",
                 "text": body,
             },
@@ -597,16 +599,6 @@ def delete_contact(contact_id: int, x_admin_password: str = Header(None)):
     if not ok:
         raise HTTPException(status_code=502, detail="削除に失敗しました")
     return {"status": "ok"}
-
-
-@app.get("/api/admin/test-email")
-def test_email(x_admin_password: str = Header(None)):
-    """メール送信テスト"""
-    _require_admin(x_admin_password)
-    import threading
-    entry = {"timestamp": "テスト", "name": "テスト", "email": "test@test.com", "category": "テスト", "message": "メール送信テスト"}
-    threading.Thread(target=_send_contact_email, args=(entry,), daemon=True).start()
-    return {"status": "dispatched", "smtp_user_set": bool(os.getenv("SMTP_USER")), "smtp_pass_set": bool(os.getenv("SMTP_PASSWORD"))}
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

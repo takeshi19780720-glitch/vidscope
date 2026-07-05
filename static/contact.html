@@ -26,14 +26,14 @@ body { background: var(--bg); color: var(--text); font-family: Inter, -apple-sys
 .lang-switcher-btn { background: none; border: none; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
 .lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 .lang-switcher-menu.open { display: block; }
-.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 8px 12px; cursor: pointer; }
+.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
 .lang-option.active { color: var(--link); font-weight: 700; }
 .lang-flag { display: inline-block; }
 .lang-name { display: inline; }
 @media (max-width: 600px) {
   .lang-switcher-btn .lang-name { display: none; }
   .lang-option .lang-name { display: inline; }
-  .lang-option { padding: 10px 12px; font-size: 16px; text-align: center; }
+  .lang-option { padding: 10px 12px; font-size: 16px; text-align: left; }
 }
 .container { max-width: 600px; margin: 0 auto; padding: 48px 24px 80px; }
 h1 { color: var(--heading); font-size: 28px; margin-bottom: 8px; }

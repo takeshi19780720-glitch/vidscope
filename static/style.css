@@ -901,6 +901,26 @@ button:hover {
   color: var(--accent-hover, #3ea6ff);
   font-weight: 700;
 }
+.lang-flag {
+  display: inline-block;
+}
+.lang-name {
+  display: inline;
+}
+
+@media (max-width: 600px) {
+  .lang-name {
+    display: none;
+  }
+  .lang-switcher-btn {
+    padding: 6px 4px 0;
+  }
+  .lang-option {
+    padding: 10px 12px;
+    font-size: 16px;
+    text-align: center;
+  }
+}
 
 /* App header language switcher: header is always dark, so keep light text in both themes */
 h1 .lang-switcher-btn,

@@ -71,6 +71,8 @@
     .lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 10px 14px; cursor: pointer; white-space: nowrap; }
     .lang-option:hover { background: rgba(255,255,255,0.06); }
     .lang-option.active { background: rgba(255,0,0,0.12); font-weight: 700; }
+    .lang-flag { display: inline-block; }
+    .lang-name { display: inline; }
 
     /* Auth */
     .auth-overlay {
@@ -257,6 +259,10 @@
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       .dashboard { padding: 88px 16px 16px; }
     }
+    @media (max-width: 600px) {
+      .lang-name { display: none; }
+      .lang-option { padding: 10px 12px; font-size: 16px; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -279,12 +285,12 @@
     <div class="live-dot"></div>
     <span class="badge">ANALYTICS</span>
     <div class="lang-switcher">
-      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current>🇯🇵 日本語</span></button>
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></span></button>
       <div class="lang-switcher-menu">
-        <button type="button" class="lang-option" data-lang="ja">🇯🇵 日本語</button>
-        <button type="button" class="lang-option" data-lang="en">🇺🇸 English</button>
-        <button type="button" class="lang-option" data-lang="ko">🇰🇷 한국어</button>
-        <button type="button" class="lang-option" data-lang="zh">🇨🇳 中文（简体）</button>
+        <button type="button" class="lang-option" data-lang="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></button>
+        <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇺🇸</span><span class="lang-name"> English</span></button>
+        <button type="button" class="lang-option" data-lang="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name"> 한국어</span></button>
+        <button type="button" class="lang-option" data-lang="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name"> 中文（简体）</span></button>
       </div>
     </div>
   </div>

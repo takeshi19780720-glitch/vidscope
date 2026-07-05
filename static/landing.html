@@ -87,6 +87,8 @@ nav {
 .lang-switcher-menu.open { display: block; }
 .lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--white); font-size: 13px; padding: 8px 12px; cursor: pointer; }
 .lang-option.active { color: #ff6b6b; font-weight: 700; }
+.lang-flag { display: inline-block; }
+.lang-name { display: inline; }
 
 /* ===== HERO ===== */
 .hero {
@@ -433,6 +435,10 @@ footer a:hover { color: var(--white); }
   .pricing-card.popular { transform: scale(1); }
   .nav-links { display: none; }
 }
+@media (max-width: 600px) {
+  .lang-name { display: none; }
+  .lang-option { padding: 10px 12px; font-size: 16px; text-align: center; }
+}
 </style>
 </head>
 <body>
@@ -447,12 +453,12 @@ footer a:hover { color: var(--white); }
     <a href="#faq" data-i18n="landing.navFaq">FAQ</a>
     <a href="/app?duration=short" class="nav-cta" data-i18n="landing.navCta">アプリを開く →</a>
     <div class="lang-switcher">
-      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current>🇯🇵 日本語</span></button>
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></span></button>
       <div class="lang-switcher-menu">
-        <button type="button" class="lang-option" data-lang="ja">🇯🇵 日本語</button>
-        <button type="button" class="lang-option" data-lang="en">🇺🇸 English</button>
-        <button type="button" class="lang-option" data-lang="ko">🇰🇷 한국어</button>
-        <button type="button" class="lang-option" data-lang="zh">🇨🇳 中文（简体）</button>
+        <button type="button" class="lang-option" data-lang="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></button>
+        <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇺🇸</span><span class="lang-name"> English</span></button>
+        <button type="button" class="lang-option" data-lang="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name"> 한국어</span></button>
+        <button type="button" class="lang-option" data-lang="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name"> 中文（简体）</span></button>
       </div>
     </div>
   </div>

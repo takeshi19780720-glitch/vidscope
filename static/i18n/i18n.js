@@ -2034,7 +2034,15 @@
   function updateLangUI() {
     document.querySelectorAll("[data-lang-current]").forEach(function (el) {
       var lang = currentLang;
-      el.textContent = (LANG_FLAGS[lang] || "") + " " + (LANG_NAMES[lang] || lang.toUpperCase());
+      el.innerHTML = "";
+      var flagSpan = document.createElement("span");
+      flagSpan.className = "lang-flag";
+      flagSpan.textContent = LANG_FLAGS[lang] || "";
+      var nameSpan = document.createElement("span");
+      nameSpan.className = "lang-name";
+      nameSpan.textContent = " " + (LANG_NAMES[lang] || lang.toUpperCase());
+      el.appendChild(flagSpan);
+      el.appendChild(nameSpan);
     });
     document.querySelectorAll(".lang-option").forEach(function (el) {
       el.classList.toggle("active", el.getAttribute("data-lang") === currentLang);

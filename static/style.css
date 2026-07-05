@@ -909,8 +909,11 @@ button:hover {
 }
 
 @media (max-width: 600px) {
-  .lang-name {
+  .lang-switcher-btn .lang-name {
     display: none;
+  }
+  .lang-option .lang-name {
+    display: inline;
   }
   .lang-switcher-btn {
     padding: 6px 4px 0;

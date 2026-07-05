@@ -44,6 +44,21 @@ create table if not exists contacts (
 );
 create index if not exists idx_contacts_created_at on contacts(created_at);
 
+-- お問い合わせへの管理者返信履歴（1件のcontactに対して複数回返信可能）
+create extension if not exists pgcrypto;
+
+create table if not exists contact_replies (
+  id uuid primary key default gen_random_uuid(),
+  contact_id bigint not null references contacts(id) on delete cascade,
+  subject text not null,
+  body text not null,
+  status text not null default 'pending' check (status in ('pending', 'sent', 'failed')),
+  error text,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_contact_replies_contact_id on contact_replies(contact_id);
+create index if not exists idx_contact_replies_created_at on contact_replies(created_at);
+
 -- ============================================
 -- ダッシュボード集計用 RPC関数
 -- ============================================
@@ -112,3 +127,4 @@ $$;
 alter table page_views enable row level security;
 alter table search_queries enable row level security;
 alter table contacts enable row level security;
+alter table contact_replies enable row level security;

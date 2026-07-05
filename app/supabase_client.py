@@ -74,6 +74,19 @@ def insert(table: str, data: dict) -> dict | None:
         return None
 
 
+def update(table: str, filters: dict, data: dict) -> bool:
+    """UPDATE（PATCH）。filtersはPostgREST演算子込み（例: {"id": "eq.1"}）"""
+    if not is_configured():
+        return False
+    try:
+        resp = requests.patch(_rest_url(table), headers=_headers(), params=filters, json=data, timeout=_TIMEOUT)
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        logger.error("Supabase update failed (%s): %s", table, e)
+        return False
+
+
 def delete(table: str, filters: dict) -> bool:
     """DELETE。filtersはPostgREST演算子込み（例: {"timestamp": "lt.2024-01-01"}）"""
     if not is_configured():

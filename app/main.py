@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query, Body, Header
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -599,6 +600,96 @@ def delete_contact(contact_id: int, x_admin_password: str = Header(None)):
     if not ok:
         raise HTTPException(status_code=502, detail="削除に失敗しました")
     return {"status": "ok"}
+
+
+@app.get("/api/admin/contacts/{contact_id}/replies")
+def admin_contact_replies(contact_id: int, x_admin_password: str = Header(None)):
+    """指定した問い合わせへの返信履歴を返す（新しい順）"""
+    _require_admin(x_admin_password)
+    rows = supabase_client.select(
+        "contact_replies",
+        select="id,subject,body,status,error,created_at",
+        filters={"contact_id": f"eq.{contact_id}"},
+        order="created_at.desc",
+    )
+    return rows
+
+
+class ReplyRequest(BaseModel):
+    subject: str
+    body: str
+
+
+def _send_reply_email(to_email: str, subject: str, body: str) -> tuple[bool, str | None]:
+    """お問い合わせ者への返信をResend API経由で送信する。(成功可否, エラーメッセージ)を返す"""
+    import requests as req
+    import logging
+
+    logger = logging.getLogger("vidscope")
+
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    if not resend_key:
+        logger.error("Resend credentials not set: RESEND_API_KEY is empty")
+        return False, "メール送信設定が未構成です"
+
+    try:
+        resp = req.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}"},
+            json={
+                # send.vidscope.app はResendでドメイン認証済みの送信元
+                "from": "VidScope <reply@send.vidscope.app>",
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            logger.info("Reply email sent successfully to %s", to_email)
+            return True, None
+        logger.error("Failed to send reply email: %s %s", resp.status_code, resp.text)
+        return False, f"メール送信に失敗しました（ステータス: {resp.status_code}）"
+    except Exception as e:
+        logger.error("Failed to send reply email: %s", str(e))
+        return False, "メール送信中にエラーが発生しました"
+
+
+@app.post("/api/admin/contacts/{contact_id}/reply")
+@limiter.limit("10/minute")
+def reply_to_contact(request: Request, contact_id: int, payload: ReplyRequest, x_admin_password: str = Header(None)):
+    """お問い合わせへの返信メールを送信し、履歴をSupabaseに記録する（認証必須）"""
+    _require_admin(x_admin_password)
+
+    contacts = supabase_client.select("contacts", select="id,email,name", filters={"id": f"eq.{contact_id}"})
+    if not contacts:
+        raise HTTPException(status_code=404, detail="お問い合わせが見つかりません")
+    contact = contacts[0]
+
+    if not payload.subject.strip() or not payload.body.strip():
+        raise HTTPException(status_code=400, detail="件名と本文を入力してください")
+
+    reply_row = supabase_client.insert("contact_replies", {
+        "contact_id": contact_id,
+        "subject": payload.subject,
+        "body": payload.body,
+        "status": "pending",
+    })
+    if not reply_row:
+        return {"success": False, "error": "返信履歴の保存に失敗しました"}
+
+    reply_id = reply_row["id"]
+    ok, err = _send_reply_email(contact["email"], payload.subject, payload.body)
+
+    supabase_client.update(
+        "contact_replies",
+        {"id": f"eq.{reply_id}"},
+        {"status": "sent"} if ok else {"status": "failed", "error": err},
+    )
+
+    if not ok:
+        return {"success": False, "error": err}
+    return {"success": True, "reply_id": reply_id}
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

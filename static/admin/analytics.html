@@ -164,6 +164,90 @@
     }
     .btn-delete:hover { background: var(--red); color: #fff; }
     .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-reply {
+      background: transparent; border: 1px solid rgba(33,150,243,0.4);
+      color: var(--blue); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 6px; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap; margin-right: 6px;
+    }
+    .btn-reply:hover { background: var(--blue); color: #fff; }
+    .btn-reply:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Reply history */
+    .reply-history-toggle {
+      background: none; border: none; color: var(--text2); font-size: 11px;
+      cursor: pointer; padding: 2px 0; text-decoration: underline;
+    }
+    .reply-history-toggle:hover { color: var(--text); }
+    .reply-history {
+      display: none; margin-top: 8px; padding: 10px 12px;
+      background: rgba(255,255,255,0.03); border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .reply-history.open { display: block; }
+    .reply-history-item {
+      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .reply-history-item:last-child { border-bottom: none; }
+    .reply-history-subject { font-weight: 700; color: var(--text); }
+    .reply-history-meta { color: var(--text2); font-size: 11px; margin-top: 2px; }
+    .reply-history-body { color: var(--text); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+    .reply-status { display: inline-block; padding: 1px 8px; border-radius: 100px; font-size: 10px; font-weight: 700; margin-left: 6px; }
+    .reply-status.sent { background: rgba(0,200,83,0.15); color: var(--green); }
+    .reply-status.pending { background: rgba(255,152,0,0.15); color: var(--orange); }
+    .reply-status.failed { background: rgba(255,0,0,0.15); color: var(--red); }
+    .reply-history-empty { color: var(--text2); font-size: 12px; }
+
+    /* Reply Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; z-index: 300;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; width: 480px; max-width: 90vw;
+    }
+    .modal-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .modal-box .modal-to { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+    .modal-field { margin-bottom: 16px; }
+    .modal-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 600; }
+    .modal-field input, .modal-field textarea {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; font-family: inherit; resize: vertical;
+    }
+    .modal-field textarea { min-height: 140px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+    .modal-btn-cancel {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .modal-btn-cancel:hover { background: rgba(255,255,255,0.06); }
+    .modal-btn-submit {
+      background: var(--red); border: none; color: #fff;
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-btn-submit:hover { background: var(--red2); }
+    .modal-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+
+    /* Toast */
+    .toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 500; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      animation: toast-in 0.2s ease-out;
+      max-width: 320px;
+    }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     @media (max-width: 1200px) {
       .cards { grid-template-columns: repeat(4, 1fr); }
@@ -304,10 +388,36 @@
   </div>
 </div>
 
+<!-- Reply Modal -->
+<div class="modal-overlay" id="reply-modal-overlay">
+  <div class="modal-box">
+    <h3 data-i18n="analytics.replyModalTitle">返信を送信</h3>
+    <div class="modal-to" id="reply-modal-to"></div>
+    <div class="modal-field">
+      <label data-i18n="analytics.replySubjectLabel">件名</label>
+      <input type="text" id="reply-subject" data-i18n-placeholder="analytics.replySubjectPlaceholder" placeholder="件名を入力">
+    </div>
+    <div class="modal-field">
+      <label data-i18n="analytics.replyBodyLabel">本文</label>
+      <textarea id="reply-body" data-i18n-placeholder="analytics.replyBodyPlaceholder" placeholder="本文を入力"></textarea>
+    </div>
+    <div class="modal-error" id="reply-modal-error"></div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn-cancel" onclick="closeReplyModal()" data-i18n="analytics.replyCancelBtn">キャンセル</button>
+      <button type="button" class="modal-btn-submit" id="reply-submit-btn" onclick="submitReply()" data-i18n="analytics.replySendBtn">送信</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
 <script src="/static/i18n/i18n.js"></script>
 <script>
 let adminPassword = '';
 let pvChart = null, browserChart = null, osChart = null;
+let replyTargetContactId = null;
+const openReplyHistory = new Set();
 
 function authenticate() {
   const pw = document.getElementById('auth-password').value;
@@ -392,6 +502,12 @@ function loadAll() {
   loadContacts();
 }
 
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function loadContacts() {
   api('/api/admin/contacts').then(d => {
     const tbody = document.getElementById('contact-list');
@@ -400,13 +516,31 @@ function loadContacts() {
     noMsg.style.display = 'none';
     const locale = (window.VidScopeI18n && window.VidScopeI18n.getLocale()) || 'ja-JP';
     const deleteLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteBtn') : '削除');
-    tbody.innerHTML = d.map(r => `<tr>
+    const replyLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyBtn') : '返信');
+    const historyLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyHistoryToggle') : '返信履歴を表示');
+    tbody.innerHTML = d.map(r => {
+      const isOpen = openReplyHistory.has(r.id);
+      return `<tr>
       <td>${new Date(r.timestamp).toLocaleString(locale, {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-      <td>${r.name || '-'}</td><td>${r.email || '-'}</td>
-      <td>${r.category || '-'}</td>
-      <td style="max-width:300px;white-space:pre-wrap;word-break:break-word;">${r.message || '-'}</td>
-      <td><button class="btn-delete" onclick="deleteContact(${r.id}, this)">${deleteLabel}</button></td>
-    </tr>`).join('');
+      <td>${escapeHtml(r.name) || '-'}</td><td>${escapeHtml(r.email) || '-'}</td>
+      <td>${escapeHtml(r.category) || '-'}</td>
+      <td style="max-width:300px;white-space:pre-wrap;word-break:break-word;">${escapeHtml(r.message) || '-'}</td>
+      <td>
+        <button class="btn-reply" onclick="openReplyModal(${r.id}, '${escapeHtml(r.email)}', '${escapeHtml(r.name)}')">${replyLabel}</button>
+        <button class="btn-delete" onclick="deleteContact(${r.id}, this)">${deleteLabel}</button>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="6" style="border-bottom:1px solid var(--border);">
+        <button type="button" class="reply-history-toggle" onclick="toggleReplyHistory(${r.id}, this)">${historyLabel}</button>
+        <div class="reply-history${isOpen ? ' open' : ''}" id="reply-history-${r.id}"></div>
+      </td>
+    </tr>`;
+    }).join('');
+    openReplyHistory.forEach(id => {
+      const el = document.getElementById(`reply-history-${id}`);
+      if (el) loadReplyHistory(id);
+    });
   });
 }
 
@@ -424,9 +558,113 @@ function deleteContact(id, btn) {
     })
     .then(() => loadContacts())
     .catch(() => {
-      alert(window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteFailed') : '削除に失敗しました');
+      showToast((window.VidScopeI18n ? window.VidScopeI18n.t('analytics.deleteFailed') : '削除に失敗しました'), 'error');
       btn.disabled = false;
     });
+}
+
+function toggleReplyHistory(contactId, btn) {
+  const el = document.getElementById(`reply-history-${contactId}`);
+  if (!el) return;
+  const willOpen = !el.classList.contains('open');
+  el.classList.toggle('open', willOpen);
+  if (willOpen) {
+    openReplyHistory.add(contactId);
+    loadReplyHistory(contactId);
+  } else {
+    openReplyHistory.delete(contactId);
+  }
+}
+
+function loadReplyHistory(contactId) {
+  const el = document.getElementById(`reply-history-${contactId}`);
+  if (!el) return;
+  api(`/api/admin/contacts/${contactId}/replies`).then(rows => {
+    const locale = (window.VidScopeI18n && window.VidScopeI18n.getLocale()) || 'ja-JP';
+    if (!Array.isArray(rows) || !rows.length) {
+      const emptyLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyHistoryEmpty') : '返信履歴はありません');
+      el.innerHTML = `<div class="reply-history-empty">${emptyLabel}</div>`;
+      return;
+    }
+    const statusLabels = {
+      sent: (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyStatusSent') : '送信済み'),
+      pending: (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyStatusPending') : '送信中'),
+      failed: (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyStatusFailed') : '送信失敗'),
+    };
+    el.innerHTML = rows.map(r => `<div class="reply-history-item">
+      <div class="reply-history-subject">${escapeHtml(r.subject)}<span class="reply-status ${escapeHtml(r.status)}">${statusLabels[r.status] || escapeHtml(r.status)}</span></div>
+      <div class="reply-history-meta">${new Date(r.created_at).toLocaleString(locale, {year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="reply-history-body">${escapeHtml(r.body)}</div>
+    </div>`).join('');
+  }).catch(() => {
+    el.innerHTML = `<div class="reply-history-empty">${window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyHistoryLoadFailed') : '返信履歴の取得に失敗しました'}</div>`;
+  });
+}
+
+function openReplyModal(contactId, email, name) {
+  replyTargetContactId = contactId;
+  const toLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyToLabel', { name: name || '-', email: email || '-' }) : `宛先: ${name || '-'} <${email || '-'}>`);
+  document.getElementById('reply-modal-to').textContent = toLabel;
+  document.getElementById('reply-subject').value = '';
+  document.getElementById('reply-body').value = '';
+  document.getElementById('reply-modal-error').style.display = 'none';
+  document.getElementById('reply-modal-overlay').classList.add('open');
+}
+
+function closeReplyModal() {
+  document.getElementById('reply-modal-overlay').classList.remove('open');
+  replyTargetContactId = null;
+}
+
+function submitReply() {
+  const subject = document.getElementById('reply-subject').value.trim();
+  const body = document.getElementById('reply-body').value.trim();
+  const errorEl = document.getElementById('reply-modal-error');
+  errorEl.style.display = 'none';
+
+  if (!subject || !body) {
+    errorEl.textContent = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyValidationError') : '件名と本文を入力してください');
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (replyTargetContactId == null) return;
+
+  const btn = document.getElementById('reply-submit-btn');
+  btn.disabled = true;
+  fetch(`/api/admin/contacts/${replyTargetContactId}/reply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+    body: JSON.stringify({ subject, body }),
+  })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+      if (ok && data.success) {
+        showToast((window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replySuccess') : '返信を送信しました'), 'success');
+        const contactId = replyTargetContactId;
+        closeReplyModal();
+        openReplyHistory.add(contactId);
+        const historyEl = document.getElementById(`reply-history-${contactId}`);
+        if (historyEl) { historyEl.classList.add('open'); loadReplyHistory(contactId); }
+      } else {
+        const msg = (data && (data.error || data.detail)) || (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyFailed') : '返信の送信に失敗しました');
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+      }
+    })
+    .catch(() => {
+      errorEl.textContent = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.replyFailed') : '返信の送信に失敗しました');
+      errorEl.style.display = 'block';
+    })
+    .finally(() => { btn.disabled = false; });
+}
+
+function showToast(message, type) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type === 'error' ? 'error' : 'success'}`;
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(() => { el.remove(); }, 4000);
 }
 
 function renderRank(id, data, key) {

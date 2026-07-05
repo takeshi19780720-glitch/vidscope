@@ -207,55 +207,65 @@ nav {
 /* ===== SLIDER ===== */
 .slider {
   perspective: 1200px;
-  overflow: visible;
+  overflow: hidden;
   padding: 20px 0 0;
 }
 .slider-track {
   display: flex; align-items: center; justify-content: center;
   gap: 0;
   position: relative;
-  height: 500px;
+  height: 460px;
 }
-.slide-card {
+.slide-item {
   flex-shrink: 0;
-  width: 70%;
-  border-radius: 12px; overflow: hidden;
+  width: 52%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition: all 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
   position: absolute;
   cursor: pointer;
+}
+.slide-card {
+  width: 100%;
+  border-radius: 12px; overflow: hidden;
   box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   background: #111;
 }
 .slide-card img, .slide-card video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.slide-label {
-  text-align: center; padding: 10px;
+.slide-caption {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center; padding: 10px 8px;
   font-size: 13px; font-weight: 600; color: var(--gray);
   background: rgba(26,26,26,0.95);
+  min-height: 42px;
+  display: flex; align-items: center; justify-content: center;
 }
 /* Center */
-.slide-card.pos-center {
+.slide-item.pos-center {
   z-index: 3;
   transform: translateX(0) scale(1) rotateY(0deg);
   opacity: 1;
   filter: brightness(1);
 }
 /* Left */
-.slide-card.pos-left {
+.slide-item.pos-left {
   z-index: 1;
-  transform: translateX(-65%) scale(0.68) rotateY(35deg);
+  transform: translateX(-50%) scale(0.72) rotateY(15deg);
   opacity: 0.6;
   filter: brightness(0.5);
 }
 /* Right */
-.slide-card.pos-right {
+.slide-item.pos-right {
   z-index: 1;
-  transform: translateX(65%) scale(0.68) rotateY(-35deg);
+  transform: translateX(50%) scale(0.72) rotateY(-15deg);
   opacity: 0.6;
   filter: brightness(0.5);
 }
-.slide-card.pos-left:hover,
-.slide-card.pos-right:hover {
+.slide-item.pos-left:hover,
+.slide-item.pos-right:hover {
   filter: brightness(0.7);
   opacity: 0.85;
 }
@@ -279,10 +289,11 @@ nav {
 }
 .slider-ind.active { background: var(--red); transform: scale(1.3); }
 @media (max-width: 768px) {
-  .slide-card { width: 75%; aspect-ratio: 16 / 10; }
-  .slide-card.pos-left { transform: translateX(-55%) scale(0.7) rotateY(25deg); }
-  .slide-card.pos-right { transform: translateX(55%) scale(0.7) rotateY(-25deg); }
-  .slider-track { height: 300px; }
+  .slide-item { width: 78%; }
+  .slide-item.pos-left { transform: translateX(-30%) scale(0.62) rotateY(15deg); }
+  .slide-item.pos-right { transform: translateX(30%) scale(0.62) rotateY(-15deg); }
+  .slider-track { height: 260px; }
+  .slide-caption { font-size: 12px; padding: 8px; min-height: 36px; }
 }
 
 /* ===== SECTION COMMON ===== */
@@ -521,21 +532,29 @@ footer a:hover { color: var(--white); }
   <div class="hero-mockup">
     <div class="slider">
       <div class="slider-track" id="sliderTrack">
-        <div class="slide-card" data-index="0">
-          <video src="/static/demo-search.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label" data-i18n="landing.slide1">🔍 キーワード検索 → 結果表示</div>
+        <div class="slide-item" data-index="0">
+          <div class="slide-card">
+            <video src="/static/demo-search.mp4" autoplay muted loop playsinline></video>
+          </div>
+          <div class="slide-caption" data-i18n="landing.slide1">🔍 キーワード検索 → 結果表示</div>
         </div>
-        <div class="slide-card active" data-index="1">
-          <video src="/static/demo-graphs.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label" data-i18n="landing.slide2">📊 トレンド分析グラフ</div>
+        <div class="slide-item active" data-index="1">
+          <div class="slide-card">
+            <video src="/static/demo-graphs.mp4" autoplay muted loop playsinline></video>
+          </div>
+          <div class="slide-caption" data-i18n="landing.slide2">📊 トレンド分析グラフ</div>
         </div>
-        <div class="slide-card" data-index="2">
-          <video src="/static/demo-results.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label" data-i18n="landing.slide3">🎬 検索結果一覧</div>
+        <div class="slide-item" data-index="2">
+          <div class="slide-card">
+            <video src="/static/demo-results.mp4" autoplay muted loop playsinline></video>
+          </div>
+          <div class="slide-caption" data-i18n="landing.slide3">🎬 検索結果一覧</div>
         </div>
-        <div class="slide-card" data-index="3">
-          <video src="/static/demo-preview.mp4" autoplay muted loop playsinline></video>
-          <div class="slide-label" data-i18n="landing.slide4">▶️ 動画プレビュー</div>
+        <div class="slide-item" data-index="3">
+          <div class="slide-card">
+            <video src="/static/demo-preview.mp4" autoplay muted loop playsinline></video>
+          </div>
+          <div class="slide-caption" data-i18n="landing.slide4">▶️ 動画プレビュー</div>
         </div>
       </div>
       <div class="slider-nav">
@@ -726,7 +745,7 @@ footer a:hover { color: var(--white); }
 <script>
 // 3D Center-focus carousel
 (function() {
-  const cards = Array.from(document.querySelectorAll('.slide-card'));
+  const cards = Array.from(document.querySelectorAll('.slide-item'));
   const inds = document.querySelectorAll('.slider-ind');
   const total = cards.length;
   let center = 1;

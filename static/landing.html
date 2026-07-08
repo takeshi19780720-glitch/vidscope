@@ -4,24 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n-doctitle="app.docTitle">VidScope — YouTube動画の発見をもっとスマートに！</title>
-<meta name="description" content="VidScopeはYouTube Data APIを活用した高機能動画検索アプリ。言語・地域フィルター、再生回数ランキング、推定収益分析で、最適な動画を瞬時に見つけます。">
+<meta name="description" content="VidScopeは無料・登録不要・APIキー不要で使えるYouTube動画検索＆推定収益分析ツール。気になるジャンルの動画を再生回数順にランキング表示し、推定収益も瞬時に確認。日本語・英語・韓国語・中国語対応。">
+<meta name="robots" content="index, follow" />
 <link rel="canonical" href="https://vidscope.app/" />
+<!--
+  hreflang note (SEO limitation, documented per growth-strategy.md audit):
+  These URLs use client-side i18n (static/i18n/i18n.js reads ?lang= on load and
+  re-renders text via JS). They are NOT fully independent SSR pages: the raw
+  HTML returned by the server is byte-identical for every hreflang URL, and
+  <title>/<meta name="description">/og:*/twitter:* tags below are NOT updated
+  per language (only in-page text via data-i18n is). Search engines that
+  execute JS may render the correct visible copy per URL, but will still see
+  the same head metadata for all languages. Longer-term fix: real per-language
+  routes/SSR (e.g. /en/, /ko/, /zh/) with distinct rendered <head> metadata.
+-->
 <link rel="alternate" hreflang="ja" href="https://vidscope.app/" />
 <link rel="alternate" hreflang="en" href="https://vidscope.app/?lang=en" />
 <link rel="alternate" hreflang="ko" href="https://vidscope.app/?lang=ko" />
 <link rel="alternate" hreflang="zh" href="https://vidscope.app/?lang=zh" />
 <link rel="alternate" hreflang="x-default" href="https://vidscope.app/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="VidScope — YouTube動画の発見をもっとスマートに！" />
-<meta property="og:description" content="YouTube Data APIを活用した高機能動画検索アプリ。言語・地域フィルター、再生回数ランキング、推定収益分析で、最適な動画を瞬時に見つけます。" />
+<meta property="og:title" content="VidScope — 無料のYouTube動画検索＆推定収益分析ツール" />
+<meta property="og:description" content="登録不要・APIキー不要。気になるジャンルの動画を再生回数順にランキング表示し、推定収益も瞬時に確認できる無料ツール。日本語・英語・韓国語・中国語対応。" />
 <meta property="og:url" content="https://vidscope.app/" />
-<meta property="og:image" content="https://vidscope.app/static/favicon-192.png" />
+<meta property="og:image" content="https://vidscope.app/static/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta property="og:locale" content="ja_JP" />
 <meta property="og:site_name" content="VidScope" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="VidScope — YouTube動画の発見をもっとスマートに！" />
-<meta name="twitter:description" content="YouTube Data APIを活用した高機能動画検索アプリ。" />
-<meta name="twitter:image" content="https://vidscope.app/static/favicon-192.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="VidScope — 無料のYouTube動画検索＆推定収益分析ツール" />
+<meta name="twitter:description" content="登録不要・APIキー不要。気になるジャンルの動画を再生回数順にランキング表示し、推定収益も瞬時に確認できる無料ツール。" />
+<meta name="twitter:image" content="https://vidscope.app/static/og-image.png" />
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">

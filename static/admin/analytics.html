@@ -502,6 +502,18 @@ function loadAll() {
   loadContacts();
 }
 
+const PV_LAST_WEEK_LABEL_FALLBACK = { ja: '前週', en: 'Last week', ko: '지난주', zh: '上周' };
+
+function getPvLastWeekLabel() {
+  const lang = (window.VidScopeI18n && window.VidScopeI18n.getLang && window.VidScopeI18n.getLang()) || 'ja';
+  const fallback = PV_LAST_WEEK_LABEL_FALLBACK[lang] || PV_LAST_WEEK_LABEL_FALLBACK.ja;
+  if (!window.VidScopeI18n || typeof window.VidScopeI18n.t !== 'function') return fallback;
+  const translated = window.VidScopeI18n.t('analytics.pvLastWeekLabel');
+  // t() returns the raw key string when the key is missing from a (possibly stale-cached) dictionary.
+  if (!translated || translated === 'analytics.pvLastWeekLabel') return fallback;
+  return translated;
+}
+
 function loadPvChart() {
   api('/api/admin/analytics/pageviews?days=7').then(d => {
     // APIはPVが0の日を返さない（欠損しうる）ため、日付文字列をキーにして整合させる。
@@ -513,7 +525,7 @@ function loadPvChart() {
 
     const renderChart = (prevData) => {
       if (prevData) {
-        const lastWeekLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.pvLastWeekLabel') : '前週');
+        const lastWeekLabel = getPvLastWeekLabel();
         datasets.push({
           label: lastWeekLabel,
           data: prevData,

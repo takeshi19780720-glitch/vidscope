@@ -343,7 +343,7 @@
         <span data-i18n="analytics.panelPvTrend">📈 ページビュー推移（直近7日間）</span>
         <label class="pv-compare-toggle" style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--text2); cursor:pointer;">
           <input type="checkbox" id="pv-compare-checkbox" onchange="onPvCompareToggle(this.checked)" style="cursor:pointer;">
-          <span data-i18n="analytics.pvCompareToggle">前週と比較</span>
+          <span data-i18n="analytics.pvCompareToggle">前週を表示</span>
         </label>
       </div>
       <canvas id="chart-pv" height="200"></canvas>
@@ -529,14 +529,10 @@ function loadPvChart() {
         datasets.push({
           label: lastWeekLabel,
           data: prevData,
-          type: 'line',
-          borderColor: 'rgba(160,160,160,0.9)',
-          backgroundColor: 'rgba(160,160,160,0.9)',
-          borderDash: [6, 4],
-          borderWidth: 2,
-          pointRadius: 2,
-          fill: false,
-          order: 0,
+          type: 'bar',
+          backgroundColor: 'rgba(160,160,160,0.7)',
+          borderRadius: 6,
+          order: 1,
         });
       }
       if (pvChart) pvChart.destroy();

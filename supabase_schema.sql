@@ -75,10 +75,14 @@ returns json language sql stable as $$
   );
 $$;
 
-create or replace function get_daily_pageviews(days_back integer)
+-- offset_days: 0 = 直近N日間（従来通り）。7を指定すると「直近N日間の1つ前の期間」
+-- （例: days_back=7, offset_days=7 → 8〜14日前の週）を取得できる。
+create or replace function get_daily_pageviews(days_back integer, offset_days integer default 0)
 returns table(date text, count bigint) language sql stable as $$
   select to_char("timestamp", 'YYYY-MM-DD'), count(*)::bigint
-  from page_views where "timestamp" >= now() - (days_back || ' days')::interval
+  from page_views
+  where "timestamp" >= now() - ((days_back + offset_days) || ' days')::interval
+    and "timestamp" < now() - (offset_days || ' days')::interval
   group by 1 order by 1;
 $$;
 

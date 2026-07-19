@@ -504,6 +504,137 @@ footer a:hover { color: var(--white); }
   .lang-option .lang-name { display: inline; }
   .lang-option { padding: 10px 12px; font-size: 16px; text-align: left; }
 }
+
+/* ===== COMPARISON ===== */
+.comparison-section {
+  padding: 80px 20px;
+  background: var(--dark);
+  color: var(--white);
+}
+.comparison-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.comparison-section .section-label {
+  text-align: center;
+  font-size: 14px;
+  color: var(--red);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.comparison-section .section-title {
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--white);
+}
+.comparison-section .section-desc {
+  text-align: center;
+  color: var(--gray);
+  margin-bottom: 40px;
+}
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  font-size: 13px;
+  background: var(--dark2);
+}
+.comparison-table th,
+.comparison-table td {
+  padding: 14px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+  vertical-align: top;
+}
+.comparison-table thead th {
+  background: #2a0a0a;
+  color: var(--white);
+  font-weight: 700;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.comparison-table thead th.highlight {
+  background: rgba(255,0,0,0.25);
+  color: #fff;
+}
+.comparison-table tbody th {
+  background: #1f1f1f;
+  font-weight: 700;
+  color: var(--white);
+  width: 140px;
+  text-align: left;
+}
+.comparison-table tbody td {
+  text-align: center;
+}
+.comparison-table tbody tr:nth-child(even) td {
+  background: rgba(255,255,255,0.02);
+}
+.comparison-table td.highlight {
+  background: rgba(255,0,0,0.08);
+  color: var(--white);
+}
+.comparison-table td.best {
+  color: #4ade80;
+  font-weight: 600;
+}
+.comparison-table tr.overall-row th,
+.comparison-table tr.overall-row td {
+  border-top: 2px solid var(--red);
+  background: rgba(255,255,255,0.05);
+}
+.comparison-table tr.overall-row td.highlight {
+  background: rgba(255,0,0,0.14);
+}
+.comparison-table td[data-i18n-html] {
+  line-height: 1.5;
+}
+.comparison-table .rating-symbol {
+  display: block;
+  text-align: center;
+  font-size: 1.15em;
+  font-weight: 700;
+}
+.comparison-table small {
+  display: block;
+  color: var(--gray2);
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.comparison-note {
+  text-align: right;
+  color: var(--gray2);
+  font-size: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 768px) {
+  .comparison-section {
+    padding: 48px 16px;
+  }
+  .comparison-section .section-title {
+    font-size: 24px;
+  }
+  .comparison-table {
+    font-size: 12px;
+  }
+  .comparison-table th,
+  .comparison-table td {
+    padding: 10px 8px;
+  }
+}
 </style>
 </head>
 <body>
@@ -649,6 +780,156 @@ footer a:hover { color: var(--white); }
       <h3 data-i18n="landing.step3Title">検索開始</h3>
       <p data-i18n="landing.step3Desc">キーワードとフィルターを設定して、最適な動画を発見しましょう。</p>
     </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="comparison-section" id="comparison">
+  <div class="container">
+    <h2 class="section-label" data-i18n="landing.comparisonLabel">比較</h2>
+    <h2 class="section-title" data-i18n="landing.comparisonTitle">同種サービスとの比較</h2>
+    <p class="section-desc" data-i18n="landing.comparisonDesc">VidScopeの特徴を分かりやすく比較します。</p>
+
+    <div class="table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th data-i18n="landing.comparisonHeaderItem">比較項目</th>
+            <th class="highlight" data-i18n="landing.comparisonHeaderVidscope">VidScope</th>
+            <th data-i18n="landing.comparisonHeaderTubebuddy">A社</th>
+            <th data-i18n="landing.comparisonHeaderVidiq">B社</th>
+            <th data-i18n="landing.comparisonHeaderSocialblade">C社</th>
+            <th data-i18n="landing.comparisonHeaderMorningfame">D社</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th data-i18n="landing.comparisonItemUse">主要用途</th>
+            <td class="highlight" data-i18n="landing.comparisonVidscopeUse">YouTube動画の発見・検索・推定収益分析</td>
+            <td data-i18n="landing.comparisonTubebuddyUse">チャンネルSEO・動画最適化</td>
+            <td data-i18n="landing.comparisonVidiqUse">チャンネル成長・SEO・分析</td>
+            <td data-i18n="landing.comparisonSocialbladeUse">チャンネル統計・ランキング閲覧</td>
+            <td data-i18n="landing.comparisonMorningfameUse">キーワード研究・成長指導</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemUser">対象ユーザー</th>
+            <td class="highlight" data-i18n="landing.comparisonVidscopeUser">動画リサーチャー・マーケター・個人クリエイター</td>
+            <td data-i18n="landing.comparisonTubebuddyUser">YouTubeクリエイター</td>
+            <td data-i18n="landing.comparisonVidiqUser">YouTubeクリエイター</td>
+            <td data-i18n="landing.comparisonSocialbladeUser">市場調査・マーケター・ファン</td>
+            <td data-i18n="landing.comparisonMorningfameUser">小規模クリエイター</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemSearch">動画検索</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeSearch">◎<br>フリーワード＋多言語・地域フィルター</td>
+            <td data-i18n-html="landing.comparisonTubebuddySearch">△<br>キーワードリサーチ中心</td>
+            <td data-i18n-html="landing.comparisonVidiqSearch">○<br>検索キーワード分析</td>
+            <td data-i18n-html="landing.comparisonSocialbladeSearch">×<br>なし</td>
+            <td data-i18n-html="landing.comparisonMorningfameSearch">○<br>キーワード候補の提示</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemRanking">ランキング表示</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeRanking">◎<br>再生回数順などの並べ替え・ランキング</td>
+            <td data-i18n-html="landing.comparisonTubebuddyRanking">△<br>競合比較</td>
+            <td data-i18n-html="landing.comparisonVidiqRanking">◎<br>トレンド・競合分析</td>
+            <td data-i18n-html="landing.comparisonSocialbladeRanking">◎<br>大規模な人気チャンネルランキング</td>
+            <td data-i18n-html="landing.comparisonMorningfameRanking">△<br>簡易的</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemRevenue">推定収益分析</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeRevenue">◎<br>想定CPM/RPMによる推定収益</td>
+            <td data-i18n-html="landing.comparisonTubebuddyRevenue">○<br>一部プラン</td>
+            <td data-i18n-html="landing.comparisonVidiqRevenue">△<br>制限あり</td>
+            <td data-i18n-html="landing.comparisonSocialbladeRevenue">○<br>推定収益表示あり</td>
+            <td data-i18n-html="landing.comparisonMorningfameRevenue">×<br>なし</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemSeo">SEO最適化支援</th>
+            <td class="highlight" data-i18n-html="landing.comparisonVidscopeSeo">△<br>検索フィルターによる改善の萌芽</td>
+            <td data-i18n-html="landing.comparisonTubebuddySeo">◎<br>タイトル/タグ/サムネ最適化</td>
+            <td data-i18n-html="landing.comparisonVidiqSeo">◎<br>タイトル/タグ/説明文提案</td>
+            <td data-i18n-html="landing.comparisonSocialbladeSeo">×<br>統計閲覧のみ</td>
+            <td data-i18n-html="landing.comparisonMorningfameSeo">◎<br>キーワード最適化提案</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemChannel">自チャンネル連携</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeChannel">×<br>不要。APIキー不要で匿名利用</td>
+            <td data-i18n-html="landing.comparisonTubebuddyChannel">◎<br>YouTubeチャンネル認証必須</td>
+            <td data-i18n-html="landing.comparisonVidiqChannel">◎<br>チャンネル連携推奨</td>
+            <td data-i18n-html="landing.comparisonSocialbladeChannel">△<br>任意のチャンネル閲覧</td>
+            <td data-i18n-html="landing.comparisonMorningfameChannel">◎<br>推奨</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemExtension">ブラウザ拡張</th>
+            <td class="highlight" data-i18n-html="landing.comparisonVidscopeExtension">×<br>なし</td>
+            <td data-i18n-html="landing.comparisonTubebuddyExtension">◎<br>拡張機能あり</td>
+            <td data-i18n-html="landing.comparisonVidiqExtension">◎<br>拡張機能あり</td>
+            <td data-i18n-html="landing.comparisonSocialbladeExtension">×<br>サイトのみ</td>
+            <td data-i18n-html="landing.comparisonMorningfameExtension">×<br>サイトのみ</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemMobile">モバイル対応</th>
+            <td class="highlight" data-i18n-html="landing.comparisonVidscopeMobile">○<br>レスポンシブWeb</td>
+            <td data-i18n-html="landing.comparisonTubebuddyMobile">△<br>Web＋拡張</td>
+            <td data-i18n-html="landing.comparisonVidiqMobile">△<br>Web＋拡張</td>
+            <td data-i18n-html="landing.comparisonSocialbladeMobile">○<br>Web</td>
+            <td data-i18n-html="landing.comparisonMorningfameMobile">○<br>Web</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemLang">多言語対応</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeLang">◎<br>ja/en/ko/zh</td>
+            <td data-i18n-html="landing.comparisonTubebuddyLang">○<br>英語中心</td>
+            <td data-i18n-html="landing.comparisonVidiqLang">○<br>英語中心</td>
+            <td data-i18n-html="landing.comparisonSocialbladeLang">○<br>英語中心</td>
+            <td data-i18n-html="landing.comparisonMorningfameLang">○<br>英語中心</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemPrice">料金体系</th>
+            <td class="highlight best" data-i18n="landing.comparisonVidscopePrice">現状無料（広告・有料化検討中）</td>
+            <td data-i18n="landing.comparisonTubebuddyPrice">Pro $12/mo, Legend $26.39/mo</td>
+            <td data-i18n="landing.comparisonVidiqPrice">Free / Boost $16.58 / Max $39</td>
+            <td data-i18n="landing.comparisonSocialbladePrice">無料主体（プレミアム機能あり）</td>
+            <td data-i18n="landing.comparisonMorningfamePrice">Plus ~$4.90/mo（招待制）</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemSetup">セットアップ手間</th>
+            <td class="highlight best" data-i18n="landing.comparisonVidscopeSetup">少ない（URLを開くだけ）</td>
+            <td data-i18n="landing.comparisonTubebuddySetup">多い（拡張・認証）</td>
+            <td data-i18n="landing.comparisonVidiqSetup">中程度（拡張・認証）</td>
+            <td data-i18n="landing.comparisonSocialbladeSetup">少ない</td>
+            <td data-i18n="landing.comparisonMorningfameSetup">中程度</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemAds">広告/アフィリエイト</th>
+            <td class="highlight best" data-i18n="landing.comparisonVidscopeAds">なし（現状）</td>
+            <td data-i18n="landing.comparisonTubebuddyAds">あり</td>
+            <td data-i18n="landing.comparisonVidiqAds">あり</td>
+            <td data-i18n="landing.comparisonSocialbladeAds">多い</td>
+            <td data-i18n="landing.comparisonMorningfameAds">少なめ</td>
+          </tr>
+          <tr>
+            <th data-i18n="landing.comparisonItemCompliance">API コンプライアンス <small>※審査なしでは取得できません</small></th>
+            <td class="highlight" data-i18n="landing.comparisonVidscopeCompliance">YouTube API 申請対応中</td>
+            <td data-i18n="landing.comparisonTubebuddyCompliance">大手・対応済み</td>
+            <td data-i18n="landing.comparisonVidiqCompliance">大手・対応済み</td>
+            <td data-i18n="landing.comparisonSocialbladeCompliance">公開統計ベース</td>
+            <td data-i18n="landing.comparisonMorningfameCompliance">既存サービス・対応済み</td>
+          </tr>
+          <tr class="overall-row">
+            <th data-i18n="landing.comparisonItemOverall">総合評価</th>
+            <td class="highlight best" data-i18n-html="landing.comparisonVidscopeOverall">◎<br>動画発見・収益分析に強み、無料で始めやすい</td>
+            <td data-i18n-html="landing.comparisonTubebuddyOverall">○<br>自チャンネルのSEO・運用に強い定番ツール</td>
+            <td data-i18n-html="landing.comparisonVidiqOverall">○<br>SEO・トレンド分析に強いチャンネル成長ツール</td>
+            <td data-i18n-html="landing.comparisonSocialbladeOverall">△<br>統計・ランキング閲覧に特化、検索機能はなし</td>
+            <td data-i18n-html="landing.comparisonMorningfameOverall">○<br>小規模クリエイター向けSEO指導に強み</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="comparison-note" data-i18n="landing.comparisonNote">
+      調査日: 2026-07-06。料金・仕様は各サービスの公式情報に基づきます。
+    </p>
   </div>
 </section>
 

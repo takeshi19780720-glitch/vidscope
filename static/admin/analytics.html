@@ -339,7 +339,13 @@
   <!-- Charts Row -->
   <div class="grid-2">
     <div class="panel">
-      <div class="panel-title" data-i18n="analytics.panelPvTrend">📈 ページビュー推移（直近7日間）</div>
+      <div class="panel-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <span data-i18n="analytics.panelPvTrend">📈 ページビュー推移（直近7日間）</span>
+        <label class="pv-compare-toggle" style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--text2); cursor:pointer;">
+          <input type="checkbox" id="pv-compare-checkbox" onchange="onPvCompareToggle(this.checked)" style="cursor:pointer;">
+          <span data-i18n="analytics.pvCompareToggle">前週と比較</span>
+        </label>
+      </div>
       <canvas id="chart-pv" height="200"></canvas>
     </div>
     <div class="panel">
@@ -425,6 +431,8 @@ let adminPassword = '';
 let pvChart = null, browserChart = null, osChart = null;
 let replyTargetContactId = null;
 const openReplyHistory = new Set();
+let pvCompareEnabled = false;
+let pvCurrentLabels = [];
 
 function authenticate() {
   const pw = document.getElementById('auth-password').value;
@@ -467,22 +475,7 @@ function loadAll() {
       (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.lastUpdated') : '最終更新') + ': ' + new Date().toLocaleTimeString(locale);
   });
 
-  api('/api/admin/analytics/pageviews?days=7').then(d => {
-    const labels = d.map(x => x.date.slice(5));
-    const data = d.map(x => x.count);
-    if (pvChart) pvChart.destroy();
-    pvChart = new Chart(document.getElementById('chart-pv'), {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'PV', data, backgroundColor: 'rgba(255,0,0,0.7)', borderRadius: 6 }] },
-      options: {
-        responsive: true, plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#888' }, grid: { display: false } },
-          y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
-        }
-      }
-    });
-  });
+  loadPvChart();
 
   api('/api/admin/analytics/top-searches').then(d => renderRank('top-searches', d, 'query'));
   api('/api/admin/analytics/top-pages').then(d => renderRank('top-pages', d, 'path'));
@@ -507,6 +500,68 @@ function loadAll() {
 
   // お問い合わせ一覧
   loadContacts();
+}
+
+function loadPvChart() {
+  api('/api/admin/analytics/pageviews?days=7').then(d => {
+    // APIはPVが0の日を返さない（欠損しうる）ため、日付文字列をキーにして整合させる。
+    const currentDates = d.map(x => x.date); // 'YYYY-MM-DD'
+    pvCurrentLabels = currentDates.map(dt => dt.slice(5));
+    const currentMap = new Map(d.map(x => [x.date, x.count]));
+    const data = currentDates.map(dt => currentMap.get(dt) || 0);
+    const datasets = [{ label: 'PV', data, backgroundColor: 'rgba(255,0,0,0.7)', borderRadius: 6, order: 1 }];
+
+    const renderChart = (prevData) => {
+      if (prevData) {
+        const lastWeekLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.pvLastWeekLabel') : '前週');
+        datasets.push({
+          label: lastWeekLabel,
+          data: prevData,
+          type: 'line',
+          borderColor: 'rgba(160,160,160,0.9)',
+          backgroundColor: 'rgba(160,160,160,0.9)',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          pointRadius: 2,
+          fill: false,
+          order: 0,
+        });
+      }
+      if (pvChart) pvChart.destroy();
+      pvChart = new Chart(document.getElementById('chart-pv'), {
+        type: 'bar',
+        data: { labels: pvCurrentLabels, datasets },
+        options: {
+          responsive: true, plugins: { legend: { display: datasets.length > 1 } },
+          scales: {
+            x: { ticks: { color: '#888' }, grid: { display: false } },
+            y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+          }
+        }
+      });
+    };
+
+    if (pvCompareEnabled) {
+      api('/api/admin/analytics/pageviews?days=7&offset_days=7').then(prev => {
+        const prevMap = new Map(prev.map(x => [x.date, x.count]));
+        // 曜日位置（day-of-week position）で揃える: 今週の各日付から7日前の日付を計算して対応するPVを引く。
+        const prevData = currentDates.map(dt => {
+          const d2 = new Date(dt + 'T00:00:00Z');
+          d2.setUTCDate(d2.getUTCDate() - 7);
+          const key = d2.toISOString().slice(0, 10);
+          return prevMap.get(key) || 0;
+        });
+        renderChart(prevData);
+      });
+    } else {
+      renderChart(null);
+    }
+  });
+}
+
+function onPvCompareToggle(checked) {
+  pvCompareEnabled = checked;
+  loadPvChart();
 }
 
 function escapeHtml(str) {

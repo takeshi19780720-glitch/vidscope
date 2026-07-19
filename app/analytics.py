@@ -129,9 +129,10 @@ def get_summary() -> dict:
     }
 
 
-def get_pageviews(days: int = 7) -> list[dict]:
-    """日別PV推移"""
-    result = sb.rpc("get_daily_pageviews", {"days_back": days})
+def get_pageviews(days: int = 7, offset_days: int = 0) -> list[dict]:
+    """日別PV推移。offset_daysを指定すると、直近days日間より前の期間を取得できる
+    （例: days=7, offset_days=7 → 8〜14日前の週＝前週）。"""
+    result = sb.rpc("get_daily_pageviews", {"days_back": days, "offset_days": offset_days})
     return result or []
 
 

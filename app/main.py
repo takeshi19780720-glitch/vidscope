@@ -535,9 +535,13 @@ def analytics_summary(x_admin_password: str = Header(None)):
 
 
 @app.get("/api/admin/analytics/pageviews")
-def analytics_pageviews(days: int = Query(7, ge=1, le=90), x_admin_password: str = Header(None)):
+def analytics_pageviews(
+    days: int = Query(7, ge=1, le=90),
+    offset_days: int = Query(0, ge=0, le=365),
+    x_admin_password: str = Header(None),
+):
     _require_admin(x_admin_password)
-    return analytics.get_pageviews(days)
+    return analytics.get_pageviews(days, offset_days)
 
 
 @app.get("/api/admin/analytics/top-pages")

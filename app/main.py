@@ -60,12 +60,36 @@ app = FastAPI(title="YouTube Data API v3 Search App")
 analytics.init_db()
 
 
+def _get_client_ip(request: Request) -> str:
+    """リバースプロキシ(Render)経由の実クライアントIPを取得する。
+
+    前提: Renderのロードバランサ/プロキシは一般的なリバースプロキシと同様に
+    `X-Forwarded-For` ヘッダーへ「元クライアントIP, プロキシ1, プロキシ2, ...」の順で
+    カンマ区切りリストを設定して転送すると想定し、先頭の値を採用する。
+    `X-Forwarded-For` が無い場合は `X-Real-IP` を次点として参照し、
+    どちらも無ければ従来通り `request.client.host`（プロキシのIP）にフォールバックする。
+
+    注意: Renderが実際にどのヘッダーでクライアントIPを渡しているかはドキュメント上
+    明確でないため、本番デプロイ後に /api/admin/analytics/recent の ip / country カラムを
+    確認し、想定通りに実IP・国が取得できているか検証すること。
+    """
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        first_ip = xff.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+    x_real_ip = request.headers.get("x-real-ip", "")
+    if x_real_ip.strip():
+        return x_real_ip.strip()
+    return request.client.host if request.client else ""
+
+
 # --- アクセス監視ミドルウェア ---
 class AnalyticsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         try:
-            ip = request.client.host if request.client else ""
+            ip = _get_client_ip(request)
             ua = request.headers.get("user-agent", "")
             lang = request.headers.get("accept-language", "").split(",")[0] if request.headers.get("accept-language") else ""
             referer = request.headers.get("referer", "")
@@ -307,7 +331,7 @@ def search(
 
     # 検索クエリを記録
     try:
-        ip = request.client.host if request.client else ""
+        ip = _get_client_ip(request)
         analytics.log_search_query(q, max_results, duration_filter, published_after, category_id, language, region, ip)
     except Exception:
         pass

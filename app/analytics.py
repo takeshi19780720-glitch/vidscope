@@ -16,6 +16,35 @@ SESSION_TIMEOUT = 300  # 5分
 _geo_cache: dict[str, str] = {}
 _geo_cache_lock = threading.Lock()
 
+# 明らかなbot/スクリプト系User-Agentのパターン（大文字小文字無視）
+_BOT_UA_PATTERNS = (
+    "bot", "spider", "crawler", "curl", "wget", "go-http-client",
+    "python-requests", "python-urllib", "libwww-perl", "scrapy",
+    "httpclient", "java/", "okhttp", "postmanruntime", "axios",
+    "node-fetch", "masscan", "nmap", "nikto", "sqlmap", "zgrab",
+)
+
+# 脆弱性スキャン等でよく狙われるパス（プレフィックス/完全一致）
+_SCAN_PATH_PREFIXES = (
+    "/wp-admin", "/wp-login.php", "/wp-content", "/wp-includes",
+    "/xmlrpc.php", "/.env", "/.git", "/phpmyadmin", "/vendor/",
+    "/.aws", "/.ssh", "/config.json", "/actuator", "/cgi-bin",
+)
+
+
+def _is_bot_user_agent(user_agent: str) -> bool:
+    """UAが既知のbot/スクリプト系パターンに一致するか判定する"""
+    if not user_agent:
+        return False
+    ua_lower = user_agent.lower()
+    return any(pattern in ua_lower for pattern in _BOT_UA_PATTERNS)
+
+
+def _is_scan_path(path: str) -> bool:
+    """脆弱性スキャンでよく狙われるパスかどうか判定する"""
+    path_lower = path.lower()
+    return any(path_lower.startswith(prefix) for prefix in _SCAN_PATH_PREFIXES)
+
 
 def init_db():
     """テーブルはSupabase側でSQL Editorにより作成済み。起動時チェックのみ行う。"""
@@ -32,6 +61,14 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
     if path.startswith("/static/") or path.startswith("/api/") or path.startswith("/admin/"):
         return
     if path in ("/robots.txt", "/sitemap.xml", "/favicon.ico"):
+        return
+
+    # 明らかなbot/スクリプトのUser-Agentは記録しない
+    if _is_bot_user_agent(user_agent):
+        return
+
+    # 脆弱性スキャン対象の典型的なパスは記録しない
+    if _is_scan_path(path):
         return
 
     ua = parse_ua(user_agent) if user_agent else None

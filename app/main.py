@@ -144,6 +144,11 @@ def contact_page() -> FileResponse:
     return FileResponse("static/contact.html")
 
 
+@app.get("/blog/vidscope-vs-tubebuddy-vidiq-socialblade")
+def blog_vidscope_vs_competitors_page() -> FileResponse:
+    return FileResponse("static/blog/vidscope-vs-tubebuddy-vidiq-socialblade.html")
+
+
 @app.post("/api/contact")
 async def submit_contact(request: Request):
     from datetime import datetime

@@ -154,6 +154,15 @@ def get_top_countries(limit: int = 10) -> list[dict]:
     return result or []
 
 
+def get_top_referrers(limit: int = 10, days: int | None = None) -> list[dict]:
+    """流入元（リファラー）ドメイン別集計TOP。daysを指定すると直近N日間、Noneなら全期間。"""
+    params: dict = {"limit_count": limit}
+    if days is not None:
+        params["days_back"] = days
+    result = sb.rpc("get_top_referrers", params)
+    return result or []
+
+
 def get_browsers() -> dict:
     """ブラウザ・OS分布"""
     result = sb.rpc("get_browser_os_stats")

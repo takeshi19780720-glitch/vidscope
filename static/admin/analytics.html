@@ -143,6 +143,8 @@
     .rank-num { color: var(--red); font-weight: 700; width: 24px; }
     .rank-name { flex: 1; margin-left: 8px; color: var(--text); }
     .rank-count { color: var(--text2); font-weight: 500; }
+    .rank-item-reddit { background: rgba(255,69,0,0.08); border-radius: 6px; }
+    .rank-item-reddit .rank-name { color: #ff5722; font-weight: 700; }
 
     /* Log Table */
     .log-table-wrap { overflow-x: auto; margin-top: 16px; }
@@ -371,6 +373,19 @@
     </div>
   </div>
 
+  <!-- Referrers Row -->
+  <div class="panel" style="margin-top:16px;">
+    <div class="panel-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span data-i18n="analytics.panelTopReferrers">🔗 流入元（リファラー） TOP10</span>
+      <select id="referrer-period-select" onchange="loadTopReferrers()" style="background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer;">
+        <option value="7" data-i18n="analytics.referrerPeriod7d">直近7日間</option>
+        <option value="30" data-i18n="analytics.referrerPeriod30d">直近30日間</option>
+        <option value="" data-i18n="analytics.referrerPeriodAll">全期間</option>
+      </select>
+    </div>
+    <ol class="rank-list" id="top-referrers"></ol>
+  </div>
+
   <!-- Contact Submissions -->
   <div class="panel" style="margin-top:16px;">
     <div class="panel-title" data-i18n="analytics.panelContacts">📩 お問い合わせ一覧</div>
@@ -480,6 +495,8 @@ function loadAll() {
   api('/api/admin/analytics/top-searches').then(d => renderRank('top-searches', d, 'query'));
   api('/api/admin/analytics/top-pages').then(d => renderRank('top-pages', d, 'path'));
   api('/api/admin/analytics/top-countries').then(d => renderRank('top-countries', d, 'country'));
+
+  loadTopReferrers();
 
   api('/api/admin/analytics/browsers').then(d => {
     if (browserChart) browserChart.destroy();
@@ -741,6 +758,21 @@ function renderRank(id, data, key) {
   document.getElementById(id).innerHTML = data.map((r, i) =>
     `<li class="rank-item"><span class="rank-num">${i+1}</span><span class="rank-name">${r[key]}</span><span class="rank-count">${r.count}</span></li>`
   ).join('');
+}
+
+function loadTopReferrers() {
+  const period = document.getElementById('referrer-period-select').value;
+  const qs = period ? `?days=${period}` : '';
+  api(`/api/admin/analytics/top-referrers${qs}`).then(d => {
+    document.getElementById('top-referrers').innerHTML = d.map((r, i) => {
+      const isReddit = /(^|\.)reddit\.com$/i.test(r.domain || '');
+      return `<li class="rank-item${isReddit ? ' rank-item-reddit' : ''}">
+        <span class="rank-num">${i+1}</span>
+        <span class="rank-name">${isReddit ? '🟠 ' : ''}${escapeHtml(r.domain)}</span>
+        <span class="rank-count">${r.count}</span>
+      </li>`;
+    }).join('');
+  });
 }
 
 function renderPie(canvasId, data) {

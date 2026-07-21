@@ -103,6 +103,26 @@ returns table(country text, count bigint) language sql stable as $$
   where country is not null and country != '' group by country order by count(*) desc limit limit_count;
 $$;
 
+-- refererのURLからドメイン単位で集計する（例: https://www.reddit.com/r/microsaas/... -> reddit.com）。
+-- referer が空/nullの場合は「Direct / (none)」として集計する。days_back を指定すると集計期間を絞れる（nullで全期間）。
+create or replace function get_top_referrers(limit_count integer, days_back integer default null)
+returns table(domain text, count bigint) language sql stable as $$
+  select
+    case
+      when referer is null or referer = '' then 'Direct / (none)'
+      else regexp_replace(
+        regexp_replace(referer, '^https?://', '', 'i'),
+        '^(www\.)?([^/]+).*$', '\2'
+      )
+    end as domain,
+    count(*)::bigint
+  from page_views
+  where (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
+  group by 1
+  order by count(*) desc
+  limit limit_count;
+$$;
+
 create or replace function get_browser_os_stats()
 returns json language sql stable as $$
   select json_build_object(

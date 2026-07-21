@@ -562,6 +562,15 @@ def analytics_top_countries(x_admin_password: str = Header(None)):
     return analytics.get_top_countries()
 
 
+@app.get("/api/admin/analytics/top-referrers")
+def analytics_top_referrers(
+    days: int | None = Query(None, ge=1, le=365),
+    x_admin_password: str = Header(None),
+):
+    _require_admin(x_admin_password)
+    return analytics.get_top_referrers(days=days)
+
+
 @app.get("/api/admin/analytics/browsers")
 def analytics_browsers(x_admin_password: str = Header(None)):
     _require_admin(x_admin_password)

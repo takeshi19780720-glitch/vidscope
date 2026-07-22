@@ -149,6 +149,11 @@ def blog_vidscope_vs_competitors_page() -> FileResponse:
     return FileResponse("static/blog/vidscope-vs-tubebuddy-vidiq-socialblade.html")
 
 
+@app.get("/blog/youtube-cpm-rpm-calculation-guide")
+def blog_youtube_cpm_rpm_guide_page() -> FileResponse:
+    return FileResponse("static/blog/youtube-cpm-rpm-calculation-guide.html")
+
+
 @app.post("/api/contact")
 async def submit_contact(request: Request):
     from datetime import datetime

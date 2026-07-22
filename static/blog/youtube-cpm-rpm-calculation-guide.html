@@ -290,6 +290,39 @@ article a { color: #3ea6ff; }
 }
 .btn-secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
 
+/* Related articles */
+.related-section { margin-top: 56px; }
+.related-section h2 { margin: 0 0 20px !important; }
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+.related-card {
+  display: block;
+  background: var(--dark2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 22px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.related-card:hover { border-color: rgba(255,0,0,0.35); transform: translateY(-2px); }
+.related-card .related-tag {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  color: #ff6b6b; background: rgba(255,0,0,0.1);
+  border: 1px solid rgba(255,0,0,0.2); border-radius: 100px;
+  padding: 3px 10px; letter-spacing: 0.5px; margin-bottom: 10px;
+}
+.related-card h3 { font-size: 16px; font-weight: 700; color: var(--white); margin: 0 0 8px; }
+.related-card p { font-size: 14px; color: var(--gray); margin: 0; }
+.related-all {
+  display: inline-block; margin-top: 20px;
+  font-size: 14px; font-weight: 600; color: #3ea6ff; text-decoration: none;
+}
+.related-all:hover { text-decoration: underline; }
+
 footer {
   border-top: 1px solid rgba(255,255,255,0.06);
   padding: 40px 24px; text-align: center;
@@ -348,7 +381,7 @@ footer a:hover { color: var(--white); }
       <a href="/#how" data-i18n="landing.navHow">使い方</a>
       <a href="/#pricing" data-i18n="landing.navPricing">料金</a>
       <a href="/#faq" data-i18n="landing.navFaq">FAQ</a>
-      <a href="/blog/vidscope-vs-tubebuddy-vidiq-socialblade" data-i18n="landing.navBlog">ブログ</a>
+      <a href="/blog" data-i18n="landing.navBlog">ブログ</a>
       <a href="/app?duration=short" class="nav-cta" data-i18n="landing.navCta">アプリを開く →</a>
     </div>
     <div class="lang-switcher">
@@ -522,6 +555,18 @@ VidScopeが表示する推定収益も、あくまで「ジャンルごとの一
 <p>A. 「再生回数 ÷ 1000 × ジャンル別CPM」の式で概算しています。ジャンル別CPMはウェブ上の公開情報を参考にした一般的な水準を初期値として設定しており、設定画面から自分の感覚に合わせて調整することもできます。</p>
 <h3>Q. VidScopeは無料ですか？</h3>
 <p>A. はい、現状すべての機能を無料でご利用いただけます（将来的な広告表示・有料化は検討中です）。</p>
+
+<div class="related-section">
+  <h2>関連記事</h2>
+  <div class="related-grid">
+    <a href="/blog/vidscope-vs-tubebuddy-vidiq-socialblade" class="related-card">
+      <span class="related-tag">競合比較</span>
+      <h3>VidScope vs TubeBuddy vs vidIQ vs Social Blade 徹底比較</h3>
+      <p>参入前のニッチ調査に強いのはどれ？ 4つのツールを比較解説します。</p>
+    </a>
+  </div>
+  <a href="/blog" class="related-all">他の記事も見る →</a>
+</div>
 
 <div class="cta-box">
   <h2>気になるジャンルの推定収益をすぐ確認してみましょう</h2>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ブログ｜VidScope - YouTubeリサーチ・収益分析に関する記事一覧</title>
+<meta name="description" content="VidScopeブログ。YouTubeのニッチ調査・競合比較・CPM/RPM推定収益の計算方法など、動画リサーチに役立つ記事を掲載しています。">
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://vidscope.app/blog" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="ブログ｜VidScope - YouTubeリサーチ・収益分析に関する記事一覧" />
+<meta property="og:description" content="YouTubeのニッチ調査・競合比較・CPM/RPM推定収益の計算方法など、動画リサーチに役立つ記事を掲載しています。" />
+<meta property="og:url" content="https://vidscope.app/blog" />
+<meta property="og:image" content="https://vidscope.app/static/og-image.png?v=2" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ja_JP" />
+<meta property="og:site_name" content="VidScope" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="ブログ｜VidScope - YouTubeリサーチ・収益分析に関する記事一覧" />
+<meta name="twitter:description" content="YouTubeのニッチ調査・競合比較・CPM/RPM推定収益の計算方法など、動画リサーチに役立つ記事を掲載しています。" />
+<meta name="twitter:image" content="https://vidscope.app/static/og-image.png?v=2" />
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="/static/i18n/i18n.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "VidScope ブログ",
+  "description": "YouTubeのニッチ調査・競合比較・CPM/RPM推定収益の計算方法など、動画リサーチに役立つ記事を掲載しています。",
+  "url": "https://vidscope.app/blog",
+  "publisher": {
+    "@type": "Organization",
+    "name": "VidScope",
+    "logo": { "@type": "ImageObject", "url": "https://vidscope.app/static/favicon-192.png" }
+  }
+}
+</script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --red: #ff0000;
+  --red-dark: #cc0000;
+  --dark: #0f0f0f;
+  --dark2: #1a1a1a;
+  --dark3: #242424;
+  --white: #f1f1f1;
+  --gray: #aaa;
+  --gray2: #888;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+  background: var(--dark);
+  color: var(--white);
+  line-height: 1.8;
+}
+
+/* Header (shared style: CSS text logo) */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(15,15,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 0 40px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--white); text-decoration: none; }
+.nav-logo span { color: var(--red); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--gray); text-decoration: none; font-size: 14px; font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-menu-links { display: contents; }
+.nav-cta {
+  background: var(--red) !important; color: #fff !important;
+  padding: 8px 20px; border-radius: 8px; font-weight: 600 !important;
+  transition: background 0.2s;
+}
+.nav-cta:hover { background: var(--red-dark) !important; }
+
+/* Hamburger (mobile only) */
+.nav-hamburger {
+  display: none;
+  background: none; border: none; color: var(--white);
+  font-size: 24px; line-height: 1; cursor: pointer; padding: 4px 6px;
+}
+.nav-overlay {
+  display: none;
+  position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 140;
+}
+.nav-overlay.open { display: block; }
+
+/* Language Switcher */
+.lang-switcher { position: relative; }
+.lang-switcher-btn { background: none; border: none; color: var(--white); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
+.lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: rgba(30,30,30,0.98); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.lang-switcher-menu.open { display: block; }
+.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--white); font-size: 13px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+.lang-option.active { color: #ff6b6b; font-weight: 700; }
+.lang-flag { display: inline-block; }
+.lang-name { display: inline; }
+
+/* Blog list layout */
+.blog-hero { padding: 64px 24px 40px; text-align: center; }
+.blog-hero .eyebrow {
+  font-size: 13px; font-weight: 700; color: var(--red);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;
+}
+.blog-hero h1 {
+  font-size: clamp(28px, 4.5vw, 44px); font-weight: 900;
+  letter-spacing: -1px; max-width: 900px; margin: 0 auto 20px;
+  line-height: 1.35;
+}
+.blog-hero .lede {
+  font-size: 17px; color: var(--gray); max-width: 700px; margin: 0 auto;
+}
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px 100px; }
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.post-card {
+  display: flex; flex-direction: column;
+  background: var(--dark2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.post-card:hover { border-color: rgba(255,0,0,0.35); transform: translateY(-3px); }
+.post-tag {
+  display: inline-block; align-self: flex-start;
+  font-size: 11px; font-weight: 700;
+  color: #ff6b6b; background: rgba(255,0,0,0.1);
+  border: 1px solid rgba(255,0,0,0.2); border-radius: 100px;
+  padding: 3px 10px; letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+.post-card h2 {
+  font-size: 20px; font-weight: 800; letter-spacing: -0.3px;
+  color: var(--white); margin-bottom: 10px; line-height: 1.4;
+}
+.post-card p {
+  font-size: 14.5px; color: var(--gray); margin-bottom: 18px; flex-grow: 1;
+}
+.post-meta {
+  font-size: 12.5px; color: var(--gray2);
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;
+}
+.post-meta .read-more { color: #3ea6ff; font-weight: 600; }
+
+footer {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 40px 24px; text-align: center;
+}
+footer p { font-size: 13px; color: var(--gray2); }
+footer a { color: var(--gray); text-decoration: none; margin: 0 12px; }
+footer a:hover { color: var(--white); }
+
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .blog-hero { padding: 48px 20px 32px; }
+  .container { padding: 0 20px 72px; }
+  .nav-links { gap: 12px; }
+  .nav-hamburger { display: block; }
+  .nav-menu-links {
+    display: flex; flex-direction: column; gap: 0;
+    position: fixed; top: 64px; right: 0; bottom: 0;
+    width: 240px; max-width: 80vw;
+    background: var(--dark2);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 0;
+    z-index: 150;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    visibility: hidden;
+  }
+  .nav-links.menu-open .nav-menu-links {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .nav-menu-links a {
+    padding: 14px 24px; font-size: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .nav-menu-links .nav-cta {
+    margin: 12px 24px 0; text-align: center; border: none;
+  }
+}
+@media (max-width: 600px) {
+  .lang-switcher-btn .lang-name { display: none; }
+  .lang-option .lang-name { display: inline; }
+  .lang-option { padding: 10px 12px; font-size: 16px; text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Vid<span>Scope</span></a>
+  <div class="nav-links" id="navLinks">
+    <div class="nav-menu-links">
+      <a href="/#features" data-i18n="landing.navFeatures">機能</a>
+      <a href="/#how" data-i18n="landing.navHow">使い方</a>
+      <a href="/#pricing" data-i18n="landing.navPricing">料金</a>
+      <a href="/#faq" data-i18n="landing.navFaq">FAQ</a>
+      <a href="/blog" data-i18n="landing.navBlog">ブログ</a>
+      <a href="/app?duration=short" class="nav-cta" data-i18n="landing.navCta">アプリを開く →</a>
+    </div>
+    <div class="lang-switcher">
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></span></button>
+      <div class="lang-switcher-menu">
+        <button type="button" class="lang-option" data-lang="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></button>
+        <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇺🇸</span><span class="lang-name"> English</span></button>
+        <button type="button" class="lang-option" data-lang="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name"> 한국어</span></button>
+        <button type="button" class="lang-option" data-lang="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name"> 中文（简体）</span></button>
+      </div>
+    </div>
+    <button type="button" class="nav-hamburger" id="navHamburger" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+  <div class="nav-overlay" id="navOverlay"></div>
+</nav>
+
+<div class="blog-hero">
+  <p class="eyebrow">Blog</p>
+  <h1>VidScope ブログ</h1>
+  <p class="lede">YouTubeのニッチ調査・競合比較・推定収益の計算方法など、動画リサーチに役立つ情報をお届けします。</p>
+</div>
+
+<div class="container">
+  <div class="post-grid">
+    <a href="/blog/vidscope-vs-tubebuddy-vidiq-socialblade" class="post-card">
+      <span class="post-tag">競合比較</span>
+      <h2>VidScope vs TubeBuddy vs vidIQ vs Social Blade 徹底比較</h2>
+      <p>参入前のニッチ調査に強いのはどれ？ 4つのツールを主要項目で比較し、VidScopeが「チャンネル運用ツール」ではなく「参入前の調査ツール」である理由を解説します。</p>
+      <div class="post-meta">
+        <span>2026年7月22日</span>
+        <span class="read-more">続きを読む →</span>
+      </div>
+    </a>
+    <a href="/blog/youtube-cpm-rpm-calculation-guide" class="post-card">
+      <span class="post-tag">ハウツーガイド</span>
+      <h2>YouTube CPM・RPMとは？推定収益の計算方法をわかりやすく解説</h2>
+      <p>CPMとRPMの違い、推定収益の計算式、ジャンル別・国別のCPM傾向、VidScopeでの確認方法までを具体例つきで解説します。</p>
+      <div class="post-meta">
+        <span>2026年7月22日</span>
+        <span class="read-more">続きを読む →</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom: 12px;">
+    <a href="/">VidScope</a>
+    <a href="/privacy">プライバシーポリシー</a>
+    <a href="/terms">利用規約</a>
+    <a href="/contact">お問い合わせ</a>
+  </p>
+  <p>© 2026 VidScope. All rights reserved.</p>
+</footer>
+
+<script>
+// Mobile hamburger menu
+(function() {
+  const navLinks = document.getElementById('navLinks');
+  const hamburger = document.getElementById('navHamburger');
+  const overlay = document.getElementById('navOverlay');
+
+  function closeMenu() {
+    navLinks.classList.remove('menu-open');
+    overlay.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    const isOpen = navLinks.classList.toggle('menu-open');
+    overlay.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  hamburger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMenu();
+  });
+  overlay.addEventListener('click', closeMenu);
+  document.querySelectorAll('.nav-menu-links a').forEach(a => {
+    a.addEventListener('click', closeMenu);
+  });
+})();
+</script>
+
+</body>
+</html>

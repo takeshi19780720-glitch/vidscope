@@ -144,6 +144,11 @@ def contact_page() -> FileResponse:
     return FileResponse("static/contact.html")
 
 
+@app.get("/blog")
+def blog_index_page() -> FileResponse:
+    return FileResponse("static/blog/index.html")
+
+
 @app.get("/blog/vidscope-vs-tubebuddy-vidiq-socialblade")
 def blog_vidscope_vs_competitors_page() -> FileResponse:
     return FileResponse("static/blog/vidscope-vs-tubebuddy-vidiq-socialblade.html")

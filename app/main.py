@@ -89,11 +89,13 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         try:
-            ip = _get_client_ip(request)
-            ua = request.headers.get("user-agent", "")
-            lang = request.headers.get("accept-language", "").split(",")[0] if request.headers.get("accept-language") else ""
-            referer = request.headers.get("referer", "")
-            analytics.log_page_view(request.url.path, ip, ua, lang, referer)
+            # 管理者自身のアクセス除外Cookieがある場合はページビューを記録しない
+            if analytics.EXCLUDE_COOKIE_NAME not in request.cookies:
+                ip = _get_client_ip(request)
+                ua = request.headers.get("user-agent", "")
+                lang = request.headers.get("accept-language", "").split(",")[0] if request.headers.get("accept-language") else ""
+                referer = request.headers.get("referer", "")
+                analytics.log_page_view(request.url.path, ip, ua, lang, referer)
         except Exception:
             pass
         return response
@@ -344,10 +346,11 @@ def search(
     resolved_language = None if language == "all" else language
     resolved_region = None if region == "all" else region
 
-    # 検索クエリを記録
+    # 検索クエリを記録（管理者自身の除外Cookieがある場合は記録しない）
     try:
-        ip = _get_client_ip(request)
-        analytics.log_search_query(q, max_results, duration_filter, published_after, category_id, language, region, ip)
+        if analytics.EXCLUDE_COOKIE_NAME not in request.cookies:
+            ip = _get_client_ip(request)
+            analytics.log_search_query(q, max_results, duration_filter, published_after, category_id, language, region, ip)
     except Exception:
         pass
 
@@ -563,13 +566,28 @@ def get_channel_videos(channel_id: str):
 # --- アナリティクス ダッシュボード ---
 
 @app.get("/admin/analytics")
-def analytics_page() -> FileResponse:
-    return FileResponse("static/admin/analytics.html")
+def analytics_page(disable_exclude: str | None = Query(None)) -> FileResponse:
+    response = FileResponse("static/admin/analytics.html")
+    # 誤って別ブラウザ/別人が除外Cookieを持ってしまった場合の解除手段
+    if disable_exclude:
+        response.delete_cookie(analytics.EXCLUDE_COOKIE_NAME, path="/")
+    return response
 
 
 @app.get("/api/admin/analytics/summary")
-def analytics_summary(x_admin_password: str = Header(None)):
+def analytics_summary(response: Response, x_admin_password: str = Header(None)):
     _require_admin(x_admin_password)
+    # 管理者本人の通常ブラウジングをアナリティクス集計から除外するためのCookieをセット
+    # （IPは変動するためCookieベースで判定する。管理画面ログイン成功時に毎回リフレッシュされる）
+    response.set_cookie(
+        key=analytics.EXCLUDE_COOKIE_NAME,
+        value="1",
+        max_age=analytics.EXCLUDE_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+    )
     return analytics.get_summary()
 
 

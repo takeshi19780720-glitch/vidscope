@@ -12,6 +12,11 @@ _active_sessions: dict[str, float] = {}  # {session_id: last_seen_timestamp}
 _sessions_lock = threading.Lock()
 SESSION_TIMEOUT = 300  # 5分
 
+# 管理者自身のアクセスをアナリティクスから除外するためのCookie
+# （管理画面ログイン成功時にセットし、以後のページビュー/検索記録を除外する）
+EXCLUDE_COOKIE_NAME = "vidscope_exclude_analytics"
+EXCLUDE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365  # 1年（秒）
+
 # IP→国キャッシュ
 _geo_cache: dict[str, str] = {}
 _geo_cache_lock = threading.Lock()

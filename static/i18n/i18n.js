@@ -604,6 +604,8 @@
         replyStatusSent: "送信済み",
         replyStatusPending: "送信中",
         replyStatusFailed: "送信失敗",
+        disableExcludeBtn: "除外を解除",
+        disableExcludeConfirm: "自分のアクセス除外を解除しますか？（このブラウザは以後、通常のアクセスとして計測されます）",
       },
     },
     en: {
@@ -1194,6 +1196,8 @@
         replyStatusSent: "Sent",
         replyStatusPending: "Sending",
         replyStatusFailed: "Failed",
+        disableExcludeBtn: "Disable exclusion",
+        disableExcludeConfirm: "Disable exclusion of your own access? (This browser will be counted as regular traffic from now on)",
       },
     },
     ko: {
@@ -1784,6 +1788,8 @@
         replyStatusSent: "전송 완료",
         replyStatusPending: "전송 중",
         replyStatusFailed: "전송 실패",
+        disableExcludeBtn: "제외 해제",
+        disableExcludeConfirm: "내 접속 제외를 해제하시겠습니까? (이 브라우저는 이후 일반 접속으로 집계됩니다)",
       },
     },
     zh: {
@@ -2374,6 +2380,8 @@
         replyStatusSent: "已发送",
         replyStatusPending: "发送中",
         replyStatusFailed: "发送失败",
+        disableExcludeBtn: "取消排除",
+        disableExcludeConfirm: "确定要取消排除自己的访问吗？（此浏览器之后将被计入正常访问统计）",
       },
     },
   };

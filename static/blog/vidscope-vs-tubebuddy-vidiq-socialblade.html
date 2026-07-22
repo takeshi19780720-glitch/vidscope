@@ -24,6 +24,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="/static/i18n/i18n.js"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -73,12 +74,43 @@ nav {
 }
 .nav-logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--white); text-decoration: none; }
 .nav-logo span { color: var(--red); }
-.nav-cta {
-  background: var(--red); color: #fff;
-  padding: 8px 20px; border-radius: 8px; font-weight: 600;
-  font-size: 14px; text-decoration: none; transition: background 0.2s;
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--gray); text-decoration: none; font-size: 14px; font-weight: 500;
+  transition: color 0.2s;
 }
-.nav-cta:hover { background: var(--red-dark); }
+.nav-links a:hover { color: var(--white); }
+.nav-menu-links { display: contents; }
+.nav-cta {
+  background: var(--red) !important; color: #fff !important;
+  padding: 8px 20px; border-radius: 8px; font-weight: 600 !important;
+  transition: background 0.2s;
+}
+.nav-cta:hover { background: var(--red-dark) !important; }
+
+/* Hamburger (mobile only) */
+.nav-hamburger {
+  display: none;
+  background: none; border: none; color: var(--white);
+  font-size: 24px; line-height: 1; cursor: pointer; padding: 4px 6px;
+}
+.nav-overlay {
+  display: none;
+  position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 140;
+}
+.nav-overlay.open { display: block; }
+
+/* Language Switcher */
+.lang-switcher { position: relative; }
+.lang-switcher-btn { background: none; border: none; color: var(--white); font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 8px; border-radius: 6px; line-height: 1; }
+.lang-switcher-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: rgba(30,30,30,0.98); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; z-index: 1200; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.lang-switcher-menu.open { display: block; }
+.lang-option { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--white); font-size: 13px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+.lang-option.active { color: #ff6b6b; font-weight: 700; }
+.lang-flag { display: inline-block; }
+.lang-name { display: inline; }
 
 /* Article layout */
 .article-hero { padding: 64px 24px 40px; text-align: center; }
@@ -235,6 +267,36 @@ footer a:hover { color: var(--white); }
   .container { padding: 0 20px 72px; }
   article h2 { margin: 40px 0 14px; }
   .cta-box { padding: 36px 20px; }
+  .nav-links { gap: 12px; }
+  .nav-hamburger { display: block; }
+  .nav-menu-links {
+    display: flex; flex-direction: column; gap: 0;
+    position: fixed; top: 64px; right: 0; bottom: 0;
+    width: 240px; max-width: 80vw;
+    background: var(--dark2);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 0;
+    z-index: 150;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    visibility: hidden;
+  }
+  .nav-links.menu-open .nav-menu-links {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .nav-menu-links a {
+    padding: 14px 24px; font-size: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .nav-menu-links .nav-cta {
+    margin: 12px 24px 0; text-align: center; border: none;
+  }
+}
+@media (max-width: 600px) {
+  .lang-switcher-btn .lang-name { display: none; }
+  .lang-option .lang-name { display: inline; }
+  .lang-option { padding: 10px 12px; font-size: 16px; text-align: left; }
 }
 </style>
 </head>
@@ -242,7 +304,27 @@ footer a:hover { color: var(--white); }
 
 <nav>
   <a href="/" class="nav-logo">Vid<span>Scope</span></a>
-  <a href="/app?duration=short" class="nav-cta">アプリを開く →</a>
+  <div class="nav-links" id="navLinks">
+    <div class="nav-menu-links">
+      <a href="/#features" data-i18n="landing.navFeatures">機能</a>
+      <a href="/#how" data-i18n="landing.navHow">使い方</a>
+      <a href="/#pricing" data-i18n="landing.navPricing">料金</a>
+      <a href="/#faq" data-i18n="landing.navFaq">FAQ</a>
+      <a href="/blog/vidscope-vs-tubebuddy-vidiq-socialblade" data-i18n="landing.navBlog">ブログ</a>
+      <a href="/app?duration=short" class="nav-cta" data-i18n="landing.navCta">アプリを開く →</a>
+    </div>
+    <div class="lang-switcher">
+      <button type="button" class="lang-switcher-btn" title="Language / 言語"><span data-lang-current><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></span></button>
+      <div class="lang-switcher-menu">
+        <button type="button" class="lang-option" data-lang="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name"> 日本語</span></button>
+        <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇺🇸</span><span class="lang-name"> English</span></button>
+        <button type="button" class="lang-option" data-lang="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name"> 한국어</span></button>
+        <button type="button" class="lang-option" data-lang="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name"> 中文（简体）</span></button>
+      </div>
+    </div>
+    <button type="button" class="nav-hamburger" id="navHamburger" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+  <div class="nav-overlay" id="navOverlay"></div>
 </nav>
 
 <div class="article-hero">
@@ -462,6 +544,35 @@ YouTube向けの分析ツールというと、TubeBuddyやvidIQのような「�
   </p>
   <p>© 2026 VidScope. All rights reserved.</p>
 </footer>
+
+<script>
+// Mobile hamburger menu
+(function() {
+  const navLinks = document.getElementById('navLinks');
+  const hamburger = document.getElementById('navHamburger');
+  const overlay = document.getElementById('navOverlay');
+
+  function closeMenu() {
+    navLinks.classList.remove('menu-open');
+    overlay.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    const isOpen = navLinks.classList.toggle('menu-open');
+    overlay.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  hamburger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMenu();
+  });
+  overlay.addEventListener('click', closeMenu);
+  document.querySelectorAll('.nav-menu-links a').forEach(a => {
+    a.addEventListener('click', closeMenu);
+  });
+})();
+</script>
 
 </body>
 </html>

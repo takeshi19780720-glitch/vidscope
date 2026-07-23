@@ -34,6 +34,9 @@ body { background: var(--bg); color: var(--text); font-family: Inter, -apple-sys
 .lang-option.active { color: var(--link); font-weight: 700; }
 .lang-flag { display: inline-block; }
 .lang-name { display: inline; }
+@media (max-width: 768px) {
+  .header { padding: 0 20px; }
+}
 @media (max-width: 600px) {
   .lang-switcher-btn .lang-name { display: none; }
   .lang-option .lang-name { display: inline; }

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n-doctitle="app.docTitle">VidScope — YouTube動画の発見をもっとスマートに！</title>
-<meta name="description" content="VidScopeは無料・登録不要・APIキー不要で使えるYouTube動画検索＆推定収益分析ツール。気になるジャンルの動画を再生回数順にランキング表示し、推定収益も瞬時に確認。日本語・英語・韓国語・中国語対応。">
+<title>VidScope | 無料のYouTube動画検索＆推定収益分析ツール</title>
+<meta name="description" content="VidScopeは登録不要・APIキー不要ですぐ使えるYouTube動画検索＆推定収益分析ツール。気になるジャンルの人気動画を再生回数順にランキング表示し、推定収益も瞬時に確認できます。日本語・英語・韓国語・中国語に対応。">
 <meta name="robots" content="index, follow" />
 <link rel="canonical" href="https://vidscope.app/" />
 <!--
@@ -39,8 +39,42 @@
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="/static/i18n/i18n.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "VidScope",
+  "url": "https://vidscope.app/",
+  "description": "登録不要・APIキー不要で使えるYouTube動画検索＆推定収益分析ツール。",
+  "inLanguage": ["ja", "en", "ko", "zh"],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://vidscope.app/app?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "VidScope",
+  "url": "https://vidscope.app/",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "VidScopeは登録不要・APIキー不要ですぐ使えるYouTube動画検索＆推定収益分析ツール。気になるジャンルの人気動画を再生回数順にランキング表示し、推定収益も瞬時に確認できます。",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "JPY"
+  },
+  "inLanguage": ["ja", "en", "ko", "zh"]
+}
+</script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1031,6 +1065,7 @@ footer a:hover { color: var(--white); }
 <!-- FOOTER -->
 <footer>
   <p style="margin-bottom: 12px;">
+    <a href="/blog" data-i18n="common.footer.blog">ブログ</a>
     <a href="/privacy" data-i18n="common.footer.privacy">プライバシーポリシー</a>
     <a href="/terms" data-i18n="common.footer.terms">利用規約</a>
     <a href="/contact" data-i18n="common.footer.contact">お問い合わせ</a>

@@ -331,6 +331,10 @@ footer a:hover { color: var(--white); }
     transform: translateX(0);
     visibility: visible;
   }
+  nav:has(.nav-links.menu-open) {
+    background: rgb(15,15,15);
+    backdrop-filter: none;
+  }
   .nav-menu-links a {
     padding: 14px 24px; font-size: 15px;
     border-bottom: 1px solid rgba(255,255,255,0.05);

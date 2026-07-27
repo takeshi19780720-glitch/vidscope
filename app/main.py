@@ -161,6 +161,11 @@ def blog_youtube_cpm_rpm_guide_page() -> FileResponse:
     return FileResponse("static/blog/youtube-cpm-rpm-calculation-guide.html")
 
 
+@app.get("/blog/free-youtube-competitor-analysis-tools")
+def blog_free_competitor_tools_page() -> FileResponse:
+    return FileResponse("static/blog/free-youtube-competitor-analysis-tools.html")
+
+
 @app.post("/api/contact")
 async def submit_contact(request: Request):
     from datetime import datetime

@@ -171,6 +171,11 @@ def blog_youtube_competitor_analysis_guide_page() -> FileResponse:
     return FileResponse("static/blog/youtube-competitor-analysis-guide.html")
 
 
+@app.get("/blog/youtube-genre-cpm-guide")
+def blog_youtube_genre_cpm_guide_page() -> FileResponse:
+    return FileResponse("static/blog/youtube-genre-cpm-guide.html")
+
+
 @app.post("/api/contact")
 async def submit_contact(request: Request):
     from datetime import datetime

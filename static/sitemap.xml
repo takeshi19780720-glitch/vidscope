@@ -32,8 +32,14 @@
   </url>
   <url>
     <loc>https://vidscope.app/blog</loc>
-    <lastmod>2026-07-27</lastmod>
+    <lastmod>2026-07-28</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://vidscope.app/blog/youtube-genre-cpm-guide</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>

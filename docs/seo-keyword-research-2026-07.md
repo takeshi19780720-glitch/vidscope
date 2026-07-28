@@ -439,7 +439,7 @@
 | 1 | 公開済み | 無料で使えるYouTube競合分析ツール7選｜参入前リサーチ向けに比較 | YouTube 競合分析ツール 無料 | 2026-07-27公開 |
 | 2 | 公開済み | YouTube競合分析のやり方｜後発チャンネルでも勝てる5ステップ | YouTube 競合 チャンネル 分析 | `YouTube 競合分析 やり方` を吸収済み |
 | 3 | 新規 | YouTubeジャンル単価一覧｜CPMが高いジャンルの調べ方も解説 | YouTube ジャンル 単価 | `YouTube 高 単価 ジャンル` を吸収 |
-| 4 | 新規 | YouTubeニッチの探し方｜ブルーオーシャンと顔出しなし需要までまとめて見極める方法 | YouTube ニッチ 探し方 | `YouTube ブルーオーシャン ジャンル` と `YouTube 稼げるジャンル 顔出しなし` を吸収 |
+| 4 | 公開済み | YouTubeニッチの探し方｜ブルーオーシャンと顔出しなし需要までまとめて見極める方法 | YouTube ニッチ 探し方 | 2026-07-28公開 / https://vidscope.app/blog/youtube-niche-research-guide |
 | 5 | 新規 | Social Bladeの使い方・見方を解説｜見るべき指標と収益推定の読み解き方 | Social Blade 使い方 | `Social Blade 見方` を吸収 |
 | 6 | 新規 | YouTubeを海外向けにすると収益は上がる？調べ方と注意点 | YouTube 海外向け 収益 | 単独維持 |
 | 7 | 新規 | vidIQの使い方を初心者向けに解説｜無料版でできることも紹介 | vidIQ 使い方 | `vidIQ 無料` を吸収 |

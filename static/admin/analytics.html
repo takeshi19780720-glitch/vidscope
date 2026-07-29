@@ -109,7 +109,7 @@
     .dashboard-title .sub { color: var(--text2); font-size: 14px; font-weight: 400; }
 
     /* Summary Cards */
-    .cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 32px; }
+    .cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 16px; }
     .card {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 12px; padding: 20px; transition: background 0.2s;
@@ -121,6 +121,37 @@
     .card-value.green { color: var(--green); }
     .card-value.blue { color: var(--blue); }
     .card-value.purple { color: var(--purple); }
+    .card-bot-note { font-size: 11px; color: var(--text2); margin-top: 6px; display: none; line-height: 1.5; }
+    .card-bot-note.show { display: block; }
+    .card-bot-note .raw { color: var(--text); font-weight: 600; }
+    .card-bot-note .ratio { color: var(--orange); font-weight: 700; }
+
+    /* Bot filter toggle bar */
+    .bot-toggle-bar {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 10px; margin-bottom: 16px;
+    }
+    .bot-toggle-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 100px; padding: 8px 14px; transition: background 0.2s, color 0.2s;
+    }
+    .bot-toggle-label:hover { background: var(--bg-card-hover); }
+    .bot-toggle-label.active { color: var(--text); border-color: rgba(255,152,0,0.4); }
+    .bot-toggle-label input { cursor: pointer; }
+    .bot-toggle-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--orange);
+      display: none;
+    }
+    .bot-toggle-label.active .bot-toggle-dot { display: inline-block; }
+
+    /* Rank list raw/filtered breakdown */
+    .rank-count-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .rank-count-filtered { color: var(--text2); font-weight: 500; }
+    .rank-count-raw { font-size: 11px; color: var(--text2); opacity: 0.75; display: none; }
+    .rank-count-raw.show { display: block; }
+    .rank-count-raw .ratio { color: var(--orange); font-weight: 700; }
 
     /* Charts */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
@@ -260,6 +291,8 @@
       .cards { grid-template-columns: repeat(2, 1fr); }
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       .dashboard { padding: 88px 16px 16px; }
+      .bot-toggle-bar { justify-content: flex-start; flex-wrap: wrap; }
+      .rank-count-wrap { align-items: flex-end; }
     }
     @media (max-width: 600px) {
       .lang-switcher-btn .lang-name { display: none; }
@@ -307,11 +340,21 @@
     <span class="sub" id="last-updated"></span>
   </div>
 
+  <!-- Bot Filter Toggle -->
+  <div class="bot-toggle-bar">
+    <label class="bot-toggle-label" id="bot-toggle-label" for="bot-toggle-checkbox">
+      <input type="checkbox" id="bot-toggle-checkbox" onchange="onBotToggle(this.checked)">
+      <span class="bot-toggle-dot"></span>
+      <span data-i18n="analytics.botToggleLabel">ボット除外前/後を表示</span>
+    </label>
+  </div>
+
   <!-- Summary Cards -->
   <div class="cards">
     <div class="card">
       <div class="card-label" data-i18n="analytics.cardToday">今日のPV</div>
       <div class="card-value red" id="pv-today">-</div>
+      <div class="card-bot-note" id="pv-today-bot-note"></div>
     </div>
     <div class="card">
       <div class="card-label" data-i18n="analytics.cardWeek">週間PV</div>
@@ -324,10 +367,12 @@
     <div class="card">
       <div class="card-label" data-i18n="analytics.cardTotal">累計PV</div>
       <div class="card-value" id="pv-total" style="color: #e0e0e0;">-</div>
+      <div class="card-bot-note" id="pv-total-bot-note"></div>
     </div>
     <div class="card">
       <div class="card-label" data-i18n="analytics.cardUnique">ユニークビジター</div>
       <div class="card-value blue" id="uv-today">-</div>
+      <div class="card-bot-note" id="uv-today-bot-note"></div>
     </div>
     <div class="card">
       <div class="card-label" data-i18n="analytics.cardSearches">検索数</div>
@@ -338,6 +383,7 @@
       <div class="card-value green" id="active-sessions">-</div>
     </div>
   </div>
+
 
   <!-- Charts Row -->
   <div class="grid-2">
@@ -483,6 +529,39 @@ function api(endpoint) {
   return fetch(endpoint, { headers: { 'X-Admin-Password': adminPassword } }).then(r => r.json());
 }
 
+let botFilterViewEnabled = false;
+
+function fmtRatio(ratio) {
+  const r = Number(ratio) || 0;
+  return r.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function onBotToggle(checked) {
+  botFilterViewEnabled = checked;
+  document.getElementById('bot-toggle-label').classList.toggle('active', checked);
+  document.querySelectorAll('.card-bot-note').forEach(el => el.classList.toggle('show', checked));
+  document.querySelectorAll('.rank-count-raw').forEach(el => el.classList.toggle('show', checked));
+  if (checked) loadBotSummary();
+  loadTopCountries();
+}
+
+function botNoteHtml(raw, filtered, ratio) {
+  const excludedLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.botNoteExcluded') : '除外前');
+  const ratioLabel = (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.botNoteRatio') : '除外率');
+  return `${excludedLabel}: <span class="raw">${raw.toLocaleString()}</span> / <span class="ratio">${ratioLabel} ${fmtRatio(ratio)}%</span>`;
+}
+
+function loadBotSummary() {
+  api('/api/admin/analytics/summary-with-raw').then(d => {
+    document.getElementById('pv-today-bot-note').innerHTML =
+      botNoteHtml(d.pv_today_raw || 0, d.pv_today_filtered || 0, d.pv_today_bot_ratio || 0);
+    document.getElementById('pv-total-bot-note').innerHTML =
+      botNoteHtml(d.pv_total_raw || 0, d.pv_total_filtered || 0, d.pv_total_bot_ratio || 0);
+    document.getElementById('uv-today-bot-note').innerHTML =
+      botNoteHtml(d.uv_today_raw || 0, d.uv_today_filtered || 0, d.uv_today_bot_ratio || 0);
+  });
+}
+
 function loadAll() {
   api('/api/admin/analytics/summary').then(d => {
     document.getElementById('pv-today').textContent = d.pv_today.toLocaleString();
@@ -496,12 +575,13 @@ function loadAll() {
     document.getElementById('last-updated').textContent =
       (window.VidScopeI18n ? window.VidScopeI18n.t('analytics.lastUpdated') : '最終更新') + ': ' + new Date().toLocaleTimeString(locale);
   });
+  if (botFilterViewEnabled) loadBotSummary();
 
   loadPvChart();
 
   api('/api/admin/analytics/top-searches').then(d => renderRank('top-searches', d, 'query'));
   api('/api/admin/analytics/top-pages').then(d => renderRank('top-pages', d, 'path'));
-  api('/api/admin/analytics/top-countries').then(d => renderRank('top-countries', d, 'country'));
+  loadTopCountries();
 
   loadTopReferrers();
 
@@ -764,6 +844,27 @@ function showToast(message, type) {
 function renderRank(id, data, key) {
   document.getElementById(id).innerHTML = data.map((r, i) =>
     `<li class="rank-item"><span class="rank-num">${i+1}</span><span class="rank-name">${r[key]}</span><span class="rank-count">${r.count}</span></li>`
+  ).join('');
+}
+
+function loadTopCountries() {
+  if (botFilterViewEnabled) {
+    api('/api/admin/analytics/top-countries-with-raw').then(renderTopCountriesWithRaw);
+  } else {
+    api('/api/admin/analytics/top-countries').then(d => renderRank('top-countries', d, 'country'));
+  }
+}
+
+function renderTopCountriesWithRaw(data) {
+  document.getElementById('top-countries').innerHTML = data.map((r, i) => `
+    <li class="rank-item">
+      <span class="rank-num">${i+1}</span>
+      <span class="rank-name">${r.country}</span>
+      <span class="rank-count-wrap">
+        <span class="rank-count-filtered">${(r.filtered_count || 0).toLocaleString()}</span>
+        <span class="rank-count-raw show">${(r.raw_count || 0).toLocaleString()} / <span class="ratio">${fmtRatio(r.bot_ratio)}%</span></span>
+      </span>
+    </li>`
   ).join('');
 }
 

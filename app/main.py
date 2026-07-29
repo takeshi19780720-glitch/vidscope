@@ -611,6 +611,13 @@ def analytics_summary(response: Response, x_admin_password: str = Header(None)):
     return analytics.get_summary()
 
 
+@app.get("/api/admin/analytics/summary-with-raw")
+def analytics_summary_with_raw(x_admin_password: str = Header(None)):
+    """ボット除外前(raw)/除外後(filtered)のPV・UUを並べて返す"""
+    _require_admin(x_admin_password)
+    return analytics.get_summary_with_raw()
+
+
 @app.get("/api/admin/analytics/pageviews")
 def analytics_pageviews(
     days: int = Query(7, ge=1, le=90),
@@ -637,6 +644,13 @@ def analytics_top_searches(x_admin_password: str = Header(None)):
 def analytics_top_countries(x_admin_password: str = Header(None)):
     _require_admin(x_admin_password)
     return analytics.get_top_countries()
+
+
+@app.get("/api/admin/analytics/top-countries-with-raw")
+def analytics_top_countries_with_raw(x_admin_password: str = Header(None)):
+    """アクセス元国TOP（除外前raw_count/除外後filtered_countを併記）"""
+    _require_admin(x_admin_password)
+    return analytics.get_top_countries_with_raw()
 
 
 @app.get("/api/admin/analytics/top-referrers")

@@ -1,17 +1,92 @@
 """アクセス監視モジュール - Supabase(PostgreSQL)ベースのアナリティクス"""
 
 import ipaddress
+import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from user_agents import parse as parse_ua
 
 from app import supabase_client as sb
 
+logger = logging.getLogger("vidscope")
+
 # アクティブセッション追跡
 _active_sessions: dict[str, float] = {}  # {session_id: last_seen_timestamp}
 _sessions_lock = threading.Lock()
 SESSION_TIMEOUT = 300  # 5分
+
+# ページビュー計測(GeoIP解決 + Supabase insert)を実行するための専用executor。
+#
+# 以前はリクエストごとに threading.Thread(daemon=True).start() していたため、
+# bot判定をすり抜けた高頻度アクセス時にスレッドが無制限に積み上がるリスクがあった
+# （1スレッドの最悪生存時間は GeoIPタイムアウト5s + 429リトライ1.5s + 5s +
+# Supabase insertタイムアウト10s ≒ 20秒程度）。
+# ThreadPoolExecutor で同時実行数の上限を持たせ、キューが溢れた場合は
+# 「計測1件を捨ててWARNINGログを出す」方針にする。計測データの欠損は
+# サービス安定性より優先度が低いため許容する。
+_ANALYTICS_MAX_WORKERS = 6
+_ANALYTICS_QUEUE_MAXSIZE = 200  # ワーカー数 + キュー待ちの上限（超過分は投入を諦める）
+_analytics_executor = ThreadPoolExecutor(
+    max_workers=_ANALYTICS_MAX_WORKERS, thread_name_prefix="analytics-io"
+)
+_analytics_pending_lock = threading.Lock()
+_analytics_pending_count = 0
+
+
+def _submit_analytics_task(fn, *args) -> None:
+    """バックグラウンドI/Oタスク(GeoIP解決+Supabase insert)をexecutorに投入する。
+
+    投入待ち件数が _ANALYTICS_QUEUE_MAXSIZE を超えている場合は、
+    プロセスの安定性を優先してこの1件の計測を諦め、WARNINGログのみ残す。
+    """
+    global _analytics_pending_count
+    with _analytics_pending_lock:
+        if _analytics_pending_count >= _ANALYTICS_QUEUE_MAXSIZE:
+            logger.warning(
+                "Analytics task queue full (>= %d pending), dropping one measurement",
+                _ANALYTICS_QUEUE_MAXSIZE,
+            )
+            return
+        _analytics_pending_count += 1
+
+    def _run():
+        global _analytics_pending_count
+        try:
+            fn(*args)
+        finally:
+            with _analytics_pending_lock:
+                _analytics_pending_count -= 1
+
+    try:
+        _analytics_executor.submit(_run)
+    except RuntimeError:
+        # executor が既に shutdown 済み（プロセス終了処理中等）。計測を諦める。
+        with _analytics_pending_lock:
+            _analytics_pending_count -= 1
+        logger.warning("Analytics executor already shut down, dropping one measurement")
+
+
+def shutdown_analytics_executor(wait_timeout: float = 5.0) -> None:
+    """プロセス終了時にexecutorをgraceful shutdownする。
+
+    実行中のinsertを可能な限り完了させるが、シャットダウンを長時間ブロック
+    しないよう待機時間には上限を設ける（デフォルト5秒）。
+    """
+
+    def _wait():
+        _analytics_executor.shutdown(wait=True)
+
+    waiter = threading.Thread(target=_wait, daemon=True)
+    waiter.start()
+    waiter.join(timeout=wait_timeout)
+    if waiter.is_alive():
+        logger.warning(
+            "Analytics executor shutdown did not finish within %.1fs, proceeding anyway",
+            wait_timeout,
+        )
+
 
 # 管理者自身のアクセスをアナリティクスから除外するためのCookie
 # （管理画面ログイン成功時にセットし、以後のページビュー/検索記録を除外する）
@@ -24,6 +99,14 @@ _geo_cache_lock = threading.Lock()
 
 # 明らかなbot/スクリプト系User-Agentのパターン（大文字小文字無視、部分一致）
 # 'bot' / 'spider' / 'crawler' の部分一致だけでは拾えない主要クローラーを個別に列挙している。
+#
+# !!! 二重管理注意 !!!
+# このパターンは supabase_schema.sql の is_bot_page_view() 内の正規表現/LIKE条件と
+# 意味的に等価になるよう保守されている（保存済み過去データを集計時に判定するため、
+# SQL側にも同じロジックが別実装として存在する）。どちらか一方だけを変更すると
+# 「新規データはPython側でブロックされるが、過去データの集計ではSQL側の古い
+# パターンのまま」というズレが発生する。変更する場合は両方を同時に更新し、
+# tests/test_analytics_bot_filter.py の等価性テストを通すこと。
 _BOT_UA_PATTERNS = (
     "bot", "spider", "crawler", "curl", "wget", "go-http-client",
     "python-requests", "python-urllib", "libwww-perl", "scrapy",
@@ -107,14 +190,13 @@ def _is_scan_path(path: str) -> bool:
 def init_db():
     """テーブルはSupabase側でSQL Editorにより作成済み。起動時チェックのみ行う。"""
     if not sb.is_configured():
-        import logging
-        logging.getLogger("vidscope").error(
+        logger.error(
             "SUPABASE_URL / SUPABASE_KEY が設定されていません。アナリティクス機能は無効化されます。"
         )
 
 
 def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: str):
-    """ページビューを記録（バックグラウンドスレッドでSupabaseへ送信）"""
+    """ページビューを記録（バックグラウンドexecutorでSupabaseへ送信）"""
     # 静的ファイル・APIリクエスト・管理ページは除外
     if path.startswith("/static/") or path.startswith("/api/") or path.startswith("/admin/"):
         return
@@ -141,24 +223,33 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
     # log_page_view() 自体は非同期ミドルウェア(AnalyticsMiddleware)から同期的に
     # 呼び出されるため、ここで待ってしまうとイベントループを塞ぎ、全リクエストの
     # レスポンスが遅延する（アクセス集中時ほど悪化し、GeoIP側のレート制限にも
-    # 到達しやすくなる悪循環を生む）。そのため国解決とinsertを丸ごとバックグラウンド
-    # スレッドに委譲し、リクエスト処理をブロックしないようにする。
+    # 到達しやすくなる悪循環を生む）。そのため国解決とinsertを丸ごとバックグラウンドの
+    # 専用executor(_analytics_executor)に委譲し、リクエスト処理をブロックしないように
+    # しつつ、同時実行数の上限を管理する（無制限スレッド生成を防ぐ）。
     def _resolve_and_insert():
-        country = _get_country(ip)
-        row = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "path": path,
-            "ip": ip,
-            "user_agent": user_agent,
-            "browser": browser,
-            "os": os_name,
-            "language": language,
-            "referer": referer,
-            "country": country,
-        }
-        sb.insert("page_views", row)
+        # この関数はexecutorのワーカースレッド上で実行される。ここで例外を
+        # 外に漏らすと threading.excepthook 経由でstderrにしか出ず、
+        # logging に残らないため、関数全体を必ずtry/exceptで囲む。
+        # 計測処理の失敗がリクエスト処理に影響することは絶対にない
+        # （呼び出し元は既にレスポンスを返した後、fire-and-forgetで実行される）。
+        try:
+            country = _get_country(ip)
+            row = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "path": path,
+                "ip": ip,
+                "user_agent": user_agent,
+                "browser": browser,
+                "os": os_name,
+                "language": language,
+                "referer": referer,
+                "country": country,
+            }
+            sb.insert("page_views", row)
+        except Exception as exc:
+            logger.warning("log_page_view background task failed for path=%s: %r", path, exc)
 
-    threading.Thread(target=_resolve_and_insert, daemon=True).start()
+    _submit_analytics_task(_resolve_and_insert)
 
     # アクティブセッション更新
     session_id = f"{ip}:{user_agent[:50] if user_agent else ''}"
@@ -168,7 +259,7 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
 
 def log_search_query(query: str, max_results: int, duration_filter: str,
                      published_after: str, category_id: str, language: str, region: str, ip: str):
-    """検索クエリを記録（バックグラウンドスレッドでSupabaseへ送信）"""
+    """検索クエリを記録（バックグラウンドexecutorでSupabaseへ送信）"""
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "query": query,
@@ -180,7 +271,14 @@ def log_search_query(query: str, max_results: int, duration_filter: str,
         "region": region,
         "ip": ip,
     }
-    threading.Thread(target=sb.insert, args=("search_queries", row), daemon=True).start()
+
+    def _insert():
+        try:
+            sb.insert("search_queries", row)
+        except Exception as exc:
+            logger.warning("log_search_query background task failed: %r", exc)
+
+    _submit_analytics_task(_insert)
 
 
 def get_active_sessions() -> int:
@@ -197,6 +295,17 @@ def get_active_sessions() -> int:
 # ip-api.com 無料プランのレート制限（45リクエスト/分）に対する自前スロットリング。
 # 上限に達している間はHTTPリクエスト自体を送らず、即座に "Unknown" とすることで
 # タイムアウト待ちによる遅延と、無駄な429連発を避ける。
+#
+# --- ip-api.com 依存に関する既知のリスク（将来GeoIPを差し替える際の判断材料） ---
+# 1. 無料プランは45req/分という厳しいレート制限があり、アクセスが集中すると
+#    容易に枯渇する（現にUnknown比率が高騰した一因）。
+# 2. 無料プランはHTTPSに非対応（http://ip-api.comのみ）。IPアドレスという
+#    個人情報になり得る値を平文でサードパーティに送信している点は要考慮。
+# 3. 利用規約上、無料プランは非商用利用が前提。VidScopeが商用サービスと
+#    見なされる場合はライセンス違反のリスクがあるため、商用化する場合は
+#    有料プランへの切り替えまたは別サービス（ipinfo.io, MaxMind GeoLite2の
+#    自前ホスティング等）への移行を検討する必要がある。
+# 今回のタスクではGeoIPサービスの差し替えは行わない（判定ロジック変更は対象外）。
 _GEO_RATE_LIMIT = 45
 _GEO_RATE_WINDOW_SEC = 60.0
 _geo_request_times: list[float] = []
@@ -362,13 +471,36 @@ def get_top_countries(limit: int = 10) -> list[dict]:
     return result or []
 
 
-def get_top_countries_with_raw(limit: int = 10) -> list[dict]:
-    """アクセス元国TOP（除外前raw_count/除外後filtered_countを併記）"""
-    result = sb.rpc("get_top_countries_with_raw", {"limit_count": limit})
+def get_top_countries_with_raw(limit: int = 10, days: int | None = None) -> list[dict]:
+    """アクセス元国TOP（除外前raw_count/除外後filtered_countを併記）。
+
+    days: 指定すると直近N日間のみ集計する（Noneなら全期間、従来通り）。
+    2026-07-21のコミット8889018（プロキシ内部IPロギング修正）以降のデータに
+    絞ってUnknown比率を確認したい場合に使う
+    （docs/pv-diagnosis-2026-07.md の訂正メモを参照）。
+    """
+    params: dict = {"limit_count": limit}
+    if days is not None:
+        params["days_back"] = days
+    result = sb.rpc("get_top_countries_with_raw", params)
     rows = result or []
     for row in rows:
         row["bot_ratio"] = _bot_ratio(row.get("raw_count", 0), row.get("filtered_count", 0))
     return rows
+
+
+def get_unknown_country_ratio(days: int | None = None) -> dict:
+    """country='Unknown'(またはnull/空)の比率を確認する。
+
+    days: 指定すると直近N日間のみ、Noneなら全期間。
+    2026-07-21以降のデータに絞ることで、8889018（プロキシ内部IPロギング修正）
+    適用後もUnknownが多いかどうかを切り分けられる。
+    """
+    params: dict = {}
+    if days is not None:
+        params["days_back"] = days
+    result = sb.rpc("get_unknown_country_ratio", params)
+    return result or {"days_back": days, "total": 0, "unknown_or_null": 0, "unknown_ratio_pct": 0}
 
 
 def get_top_referrers(limit: int = 10, days: int | None = None) -> list[dict]:

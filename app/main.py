@@ -60,6 +60,16 @@ app = FastAPI(title="YouTube Data API v3 Search App")
 analytics.init_db()
 
 
+@app.on_event("shutdown")
+def _shutdown_analytics_executor():
+    """プロセス終了時、アナリティクス計測用executorをgraceful shutdownする。
+
+    実行中のGeoIP解決/Supabase insertをできる限り完了させるが、
+    シャットダウン自体を長時間ブロックしないよう待機時間には上限（5秒）を設ける。
+    """
+    analytics.shutdown_analytics_executor(wait_timeout=5.0)
+
+
 def _get_client_ip(request: Request) -> str:
     """リバースプロキシ(Render)経由の実クライアントIPを取得する。
 
@@ -647,10 +657,32 @@ def analytics_top_countries(x_admin_password: str = Header(None)):
 
 
 @app.get("/api/admin/analytics/top-countries-with-raw")
-def analytics_top_countries_with_raw(x_admin_password: str = Header(None)):
-    """アクセス元国TOP（除外前raw_count/除外後filtered_countを併記）"""
+def analytics_top_countries_with_raw(
+    days: int | None = Query(None, ge=1, le=365),
+    x_admin_password: str = Header(None),
+):
+    """アクセス元国TOP（除外前raw_count/除外後filtered_countを併記）。
+
+    days指定時は直近N日間のみ集計する。2026-07-21のコミット8889018
+    （プロキシ内部IPロギング修正）以降のデータに絞ってUnknown比率を
+    確認する用途を想定（docs/pv-diagnosis-2026-07.md 参照）。
+    """
     _require_admin(x_admin_password)
-    return analytics.get_top_countries_with_raw()
+    return analytics.get_top_countries_with_raw(days=days)
+
+
+@app.get("/api/admin/analytics/unknown-country-ratio")
+def analytics_unknown_country_ratio(
+    days: int | None = Query(None, ge=1, le=365),
+    x_admin_password: str = Header(None),
+):
+    """country='Unknown'(またはnull/空)の比率を確認する。
+
+    days指定時は直近N日間のみ。8889018（2026-07-21のIP取得修正）以降の
+    データだけでUnknown比率がどの程度かを素早く確認するためのエンドポイント。
+    """
+    _require_admin(x_admin_password)
+    return analytics.get_unknown_country_ratio(days=days)
 
 
 @app.get("/api/admin/analytics/top-referrers")

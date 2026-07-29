@@ -149,6 +149,11 @@ $$;
 -- _is_bot_user_agent / _is_bot_ip / _is_scan_path とできる限り一致させること。
 -- UAパターンや IPレンジを追加/変更した場合は、Python側とこの関数の両方を
 -- 同時に更新する必要がある点に注意。
+--
+-- !!! 二重管理注意 !!! (app/analytics.py の _BOT_UA_PATTERNS / _BOT_IP_RANGES /
+-- _SCAN_PATH_PREFIXES と本関数は独立した2つの実装であり、自動的には同期されない。
+-- 変更時は必ず両方を更新し、tests/test_analytics_bot_filter.py の
+-- SQL/Python等価性テストで整合性を確認すること。
 create or replace function is_bot_page_view(user_agent text, ip text, path text)
 returns boolean language sql immutable as $$
   select
@@ -231,7 +236,14 @@ $$;
 
 -- 国別TOPの除外前/除外後を1回のクエリで返す。
 -- raw_count: 全レコード数, filtered_count: bot除外後の件数（該当国がbotのみなら0行にはならず表示され得る）
-create or replace function get_top_countries_with_raw(limit_count integer)
+-- days_back: 集計期間を直近N日に絞る（nullで全期間、従来通り）。
+--
+-- 追加理由（2026-07-29調査）: country='Unknown' が全期間集計で94%を占めていたが、
+-- 原因はコミット 8889018（2026-07-21、プロキシの内部IPをログしていた不具合の修正）
+-- 以前に記録された過去データが大半を占めているため。8889018以降のレコードに絞って
+-- Unknown比率を確認できるよう days_back を追加した。過去データは遡及削除しない方針
+-- のため、全期間集計には引き続きUnknownが多く残る点に注意（docs/pv-diagnosis-2026-07.md 参照）。
+create or replace function get_top_countries_with_raw(limit_count integer, days_back integer default null)
 returns table(country text, raw_count bigint, filtered_count bigint) language sql stable as $$
   select
     country,
@@ -239,9 +251,34 @@ returns table(country text, raw_count bigint, filtered_count bigint) language sq
     count(*) filter (where not is_bot_page_view(user_agent, ip, path))::bigint as filtered_count
   from page_views
   where country is not null and country != ''
+    and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
   group by country
   order by raw_count desc
   limit limit_count;
+$$;
+
+-- Unknown国名の比率のみをピンポイントで確認するための集計。
+-- 「8889018（2026-07-21のIP取得修正）以降のレコードでもUnknownが多いのか」を
+-- 素早く切り分けられるように、days_back指定時とnull（全期間）時を比較できる形にする。
+create or replace function get_unknown_country_ratio(days_back integer default null)
+returns json language sql stable as $$
+  select json_build_object(
+    'days_back', days_back,
+    'total', (select count(*) from page_views
+              where days_back is null or "timestamp" >= now() - (days_back || ' days')::interval),
+    'unknown_or_null', (select count(*) from page_views
+              where (country is null or country = '' or country = 'Unknown')
+                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
+    'unknown_ratio_pct', (
+      select case when count(*) = 0 then 0
+        else round(
+          100.0 * count(*) filter (where country is null or country = '' or country = 'Unknown')
+          / count(*), 1)
+      end
+      from page_views
+      where days_back is null or "timestamp" >= now() - (days_back || ' days')::interval
+    )
+  );
 $$;
 
 -- ============================================

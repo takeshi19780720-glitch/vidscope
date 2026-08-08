@@ -1252,7 +1252,6 @@ function rerenderWithFilters() {
   const filters = [];
   if (chartFilter.tag) filters.push(t("app.chartFilter.tag", { value: chartFilter.tag }));
   if (chartFilter.viewRange) filters.push(t("app.chartFilter.viewRange", { value: chartFilter.viewRange }));
-  if (chartFilter.engRange) filters.push(t("app.chartFilter.engRange", { value: chartFilter.engRange }));
   if (chartFilter.country) filters.push(t("app.chartFilter.country", { value: chartFilter.country }));
   if (chartFilter.weekday !== null) {
     filters.push(t("app.chartFilter.weekday", { value: weekdayName(chartFilter.weekday) }));
@@ -1301,7 +1300,7 @@ async function runSearch(event) {
       throw new Error(data.detail || t("app.status.searchFailed"));
     }
     latestItems = data.items || [];
-    chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
+    chartFilter = { tag: null, viewRange: null, country: null, weekday: null, hour: null, titleWord: null };
     rerenderWithFilters();
     updateVideoSchema(latestItems);
     if (q) addToHistory(q, {
@@ -1390,7 +1389,7 @@ async function runCompareSearch() {
       keywords.map((kw, i) => fetchKeywordData(kw, COMPARE_COLORS[i]))
     );
     comparisonData = results;
-    chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
+    chartFilter = { tag: null, viewRange: null, country: null, weekday: null, hour: null, titleWord: null };
 
     document.getElementById("search-loading").style.display = "none";
     renderComparisonSummary(comparisonData);
@@ -2050,7 +2049,7 @@ function renderHistory() {
       languageFilterInput.value = f.language || "all";
       regionFilterInput.value = f.region || "all";
       if (f.maxResults) maxResultsInput.value = f.maxResults;
-      chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
+      chartFilter = { tag: null, viewRange: null, country: null, weekday: null, hour: null, titleWord: null };
       runSearch(new Event("submit"));
     });
   });

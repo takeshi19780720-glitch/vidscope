@@ -1167,10 +1167,6 @@ h1 .lang-option.active {
   }
 }
 
-/* フィルターエリア: 7列グリッドのままだと「エンゲージメント率」「再生回数（万回以上）」等の
-   ラベルが折り返され縦位置がズレるため、この幅レンジのみ4列+3列の2段組みに切り替える。
-   901px以上は.containerが100%幅(タブレット帯)または70%幅(PC帯、1920px以上)のいずれでも
-   実測幅が十分広く7列でも折り返さないため、この4列化は900px以下に限定する */
 @media (min-width: 601px) and (max-width: 900px) {
   .filters-row {
     grid-template-columns: repeat(4, 1fr);
@@ -1447,7 +1443,7 @@ h1 .lang-option.active {
   color: #fff;
 }
 
-.cpm-save-btn {
+.primary-action-btn {
   font-size: 13px;
   padding: 8px 16px;
   border-radius: 8px;

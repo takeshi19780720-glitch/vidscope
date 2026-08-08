@@ -17,7 +17,6 @@ class VideoItem(BaseModel):
     channel_title: str
     channel_id: str = ""
     subscriber_count: int
-    engagement_rate: float
     category_id: str = ""
     default_language: str = ""
     default_audio_language: str = ""

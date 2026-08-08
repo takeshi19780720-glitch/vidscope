@@ -63,7 +63,6 @@
   --fav-remove-hover-bg: #ffe0e0;
   --channel-desc-bg: #f7f7f7;
   --spinner-track:  #dddddd;
-  --cpm-ref-bg:     #f0f0f0;
   --quota-bar-bg:     #ddd;
   --quota-bar-ok:     #43a047;
   --quota-bar-warn:   #fb8c00;
@@ -415,15 +414,17 @@ button:hover {
 
 /* Thumbnail column */
 .list-col-thumb {
-  width: 100px;
-  min-width: 96px;
+  width: 140px;
+  min-width: 140px;
 }
 
 .list-thumb-wrap {
   position: relative;
   display: inline-block;
-  width: 80px;
-  height: 45px;
+  width: 120px;
+  height: 70px;
+  min-width: 120px;
+  min-height: 70px;
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
@@ -432,8 +433,8 @@ button:hover {
 
 .list-thumb-wrap img {
   display: block;
-  width: 80px;
-  height: 45px;
+  width: 120px;
+  height: 70px;
   object-fit: cover;
   border-radius: 4px;
 }
@@ -499,10 +500,8 @@ button:hover {
 /* Numeric columns */
 .list-col-subs,
 .list-col-views,
-.list-col-eng,
 .list-col-duration,
-.list-col-date,
-.list-col-revenue {
+.list-col-date {
   white-space: nowrap;
   font-size: 12px;
   color: var(--text-secondary);
@@ -521,8 +520,6 @@ button:hover {
     margin: 0 0 8px;
   }
   .list-col-subs,
-  .list-col-revenue,
-  .list-col-eng,
   .list-col-duration,
   .list-col-genre {
     display: none;
@@ -1450,64 +1447,6 @@ h1 .lang-option.active {
   color: #fff;
 }
 
-/* --- 推定収益バッジ --- */
-.revenue-badge {
-  display: inline-block;
-  margin-left: 6px;
-  color: #4cdb8a;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(76, 219, 138, 0.12);
-  border: 1px solid rgba(76, 219, 138, 0.3);
-  border-radius: 4px;
-  padding: 1px 6px;
-  white-space: nowrap;
-}
-
-.revenue-note {
-  color: var(--text-muted);
-  font-size: 10px;
-  margin-left: 4px;
-}
-
-/* --- CPM設定フォーム --- */
-.cpm-form {
-  margin-bottom: 4px;
-}
-
-.cpm-label {
-  display: block;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.cpm-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cpm-input-wrap input {
-  width: 100px;
-  background: var(--bg-input2);
-  border: 1px solid var(--border4);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.cpm-input-wrap input:focus {
-  outline: none;
-  border-color: var(--accent-hover);
-}
-
-.cpm-unit {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
 .cpm-save-btn {
   font-size: 13px;
   padding: 8px 16px;
@@ -1694,54 +1633,6 @@ h1 .lang-option.active {
   color: #fff;
 }
 
-/* --- ジャンル別CPM設定 --- */
-.genre-cpm-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.genre-cpm-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.genre-cpm-name {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text-secondary);
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.genre-cpm-row input[type="number"] {
-  width: 90px;
-  background: var(--bg-input2);
-  border: 1px solid var(--border4);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 6px 10px;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.genre-cpm-row input[type="number"]:focus {
-  outline: none;
-  border-color: var(--accent-hover);
-}
-
-.genre-cpm-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-}
-
 /* --- 人気キーワード＋検索履歴 横並び --- */
 .keywords-history-row {
   display: flex;
@@ -1858,6 +1749,8 @@ h1 .lang-option.active {
 .thumb-play-btn img {
   width: 100%;
   aspect-ratio: 16 / 9;
+  min-width: 120px;
+  min-height: 70px;
   object-fit: cover;
   display: block;
   transition: brightness 0.2s;
@@ -1991,47 +1884,6 @@ h1 .lang-option.active {
 .modal-body hr {
   border-color: var(--border2);
   margin: 20px 0;
-}
-.genre-cpm-row.short-row {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border2);
-}
-.cpm-reference {
-  margin-top: 12px;
-  padding: 10px;
-  background: var(--cpm-ref-bg);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  border: 1px solid var(--border2);
-}
-.cpm-reference p.cpm-ref-title {
-  margin: 0 0 8px 0;
-  color: var(--text-primary);
-  font-weight: bold;
-}
-.cpm-reference table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.cpm-reference td {
-  padding: 3px 0;
-  color: var(--text-muted);
-}
-.cpm-reference td:last-child {
-  text-align: right;
-}
-.cpm-reference p.cpm-ref-note1 {
-  margin: 8px 0 4px 0;
-  font-size: 11px;
-  color: var(--text-faint);
-}
-.cpm-reference p.cpm-ref-note2 {
-  margin: 0;
-  font-size: 10px;
-  color: var(--text-faintest);
 }
 
 /* --- クォータ表示 --- */
@@ -2330,7 +2182,7 @@ h1 .quota-bar-track {
 
 .top10-card {
   flex: 0 0 calc(10% - 7.2px);
-  min-width: 120px;
+  min-width: 128px;
   background: var(--bg-surface);
   border: 1px solid var(--border2);
   border-radius: 8px;
@@ -2365,6 +2217,8 @@ h1 .quota-bar-track {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
+  min-width: 120px;
+  min-height: 70px;
   cursor: pointer;
   line-height: 0;
   overflow: hidden;

@@ -23,10 +23,8 @@ const GRAPH_IDS = [
   "country-chart",
   "country-view-chart",
   "view-chart",
-  "engagement-chart",
   "category-chart",
   "category-view-chart",
-  "category-revenue-chart",
   "tag-chart",
   "title-word-chart",
   "weekday-chart",
@@ -74,14 +72,11 @@ const maxResultsInput = document.getElementById("max-results");
 const durationFilterInput = document.getElementById("duration-filter");
 const publishedAfterInput = document.getElementById("published-after");
 const categoryFilterInput = document.getElementById("category-filter");
-const engagementFilterInput = document.getElementById("engagement-filter");
 const viewCountFilterInput = document.getElementById("view-count-filter");
 const languageFilterInput = document.getElementById("language-filter");
 const regionFilterInput = document.getElementById("region-filter");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
-const exportCsvBtn = document.getElementById("export-csv-btn");
-const exportXlsxBtn = document.getElementById("export-xlsx-btn");
 const categoryChartCanvas = document.getElementById("category-chart");
 const videoPreviewModal = document.getElementById("video-preview-modal");
 const videoModalClose = document.getElementById("video-modal-close");
@@ -143,13 +138,11 @@ async function fetchQuota() {
 fetchQuota();
 
 const viewChartCanvas = document.getElementById("view-chart");
-const engagementChartCanvas = document.getElementById("engagement-chart");
 const tagChartCanvas = document.getElementById("tag-chart");
 const countryChartCanvas = document.getElementById("country-chart");
 const hourChartCanvas = document.getElementById("hour-chart");
 const countryViewChartCanvas = document.getElementById("country-view-chart");
 const categoryViewChartCanvas = document.getElementById("category-view-chart");
-const categoryRevenueChartCanvas = document.getElementById("category-revenue-chart");
 const weekdayChartCanvas = document.getElementById("weekday-chart");
 const titleWordChartCanvas = document.getElementById("title-word-chart");
 const correlationChartCanvas = document.getElementById("correlation-chart");
@@ -198,7 +191,7 @@ function toggleTheme() {
     renderComparisonSummary(comparisonData);
     renderComparisonCharts(comparisonData);
   } else if (latestItems.length) {
-    const filtered = applyEngagementFilter(latestItems);
+    const filtered = applyResultFilters(latestItems);
     renderTrendCharts(filtered);
   }
 }
@@ -292,85 +285,19 @@ document.addEventListener("keydown", (e) => {
     }
   }
 });
-let chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
+let chartFilter = { tag: null, viewRange: null, country: null, weekday: null, hour: null, titleWord: null };
 let charts = {
   category: null,
   tag: null,
   view: null,
-  engagement: null,
   country: null,
   hour: null,
   countryView: null,
   categoryView: null,
-  categoryRevenue: null,
   weekday: null,
   titleWord: null,
   correlation: null,
 };
-
-// --- CPM / 推定収益 ---
-const CPM_KEY = "yt_cpm";
-const CPM_DEFAULT = 100;
-const CPM_GENRE_KEY_PREFIX = "yt_cpm_genre_";
-
-const GENRE_CPM_DEFAULTS = {
-  "1": 50,    // 映画・アニメ
-  "2": 50,    // 自動車・乗り物
-  "10": 200,  // 音楽
-  "15": 200,  // ペット・動物
-  "17": 50,   // スポーツ
-  "19": 50,   // 旅行・イベント
-  "20": 200,  // ゲーム
-  "22": 150,  // 人物・ブログ
-  "23": 50,   // コメディ
-  "24": 50,   // エンタメ
-  "25": 50,   // ニュース・政治
-  "26": 200,  // ハウツー・スタイル
-  "27": 200,  // 教育
-  "28": 1000, // 科学・テクノロジー
-  "29": 1000, // 非営利・社会活動
-  "short": 10, // ショート動画
-};
-
-function loadCpm() {
-  const v = Number(localStorage.getItem(CPM_KEY));
-  return (v >= 1 && v <= 1000) ? v : CPM_DEFAULT;
-}
-
-function saveCpm(value) {
-  localStorage.setItem(CPM_KEY, String(value));
-}
-
-function loadGenreCpm(categoryId) {
-  const id = String(categoryId || "");
-  const stored = localStorage.getItem(CPM_GENRE_KEY_PREFIX + id);
-  if (stored !== null) {
-    const v = Number(stored);
-    if (v >= 1) return v;
-  }
-  return GENRE_CPM_DEFAULTS[id] !== undefined ? GENRE_CPM_DEFAULTS[id] : loadCpm();
-}
-
-function saveGenreCpm(categoryId, value) {
-  localStorage.setItem(CPM_GENRE_KEY_PREFIX + String(categoryId), String(value));
-}
-
-function resetAllGenreCpm() {
-  Object.keys(GENRE_CPM_DEFAULTS).forEach((id) => {
-    localStorage.removeItem(CPM_GENRE_KEY_PREFIX + id);
-  });
-}
-
-function formatRevenue(viewCount, cpm) {
-  const revenue = Math.round((viewCount * cpm) / 1000);
-  if (revenue >= 100000000) {
-    return `¥${(revenue / 100000000).toFixed(1).replace(/\.0$/, "")}億`;
-  }
-  if (revenue >= 10000) {
-    return `¥${(revenue / 10000).toFixed(1).replace(/\.0$/, "")}万`;
-  }
-  return `¥${new Intl.NumberFormat("ja-JP").format(revenue)}`;
-}
 
 const CATEGORY_MAP = {
   "1": "映画・アニメ", "2": "自動車・乗り物", "10": "音楽",
@@ -403,104 +330,6 @@ function weekdayName(day) {
 
 function fmt(num) {
   return new Intl.NumberFormat(currentLocale()).format(num || 0);
-}
-
-function csvEscape(value) {
-  const s = String(value ?? "");
-  if (/[",\n]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
-
-function buildCsvRows(items) {
-  const header = [
-    t("app.exportHeader.title"),
-    t("app.exportHeader.channel"),
-    t("app.exportHeader.views"),
-    t("app.exportHeader.likes"),
-    t("app.exportHeader.comments"),
-    t("app.exportHeader.subscribers"),
-    t("app.exportHeader.engagement"),
-    t("app.exportHeader.duration"),
-    t("app.exportHeader.published"),
-    t("app.exportHeader.genre"),
-    t("app.exportHeader.tags"),
-    t("app.exportHeader.url"),
-  ];
-  const rows = items.map((item) => {
-    const catName = getCategoryName(item.category_id);
-    return [
-      item.title || "",
-      item.channel_title || "",
-      item.view_count || 0,
-      item.like_count || 0,
-      item.comment_count || 0,
-      item.subscriber_count || 0,
-      (Number(item.engagement_rate || 0) * 100).toFixed(2) + "%",
-      item.duration_seconds || 0,
-      item.published_at || "",
-      catName,
-      (item.tags || []).join("|"),
-      item.video_url || "",
-    ];
-  });
-  return [header, ...rows].map((line) => line.map(csvEscape).join(",")).join("\n");
-}
-
-function exportCsv(items) {
-  if (!items.length) {
-    statusEl.textContent = t("app.status.noExportData");
-    return;
-  }
-  const csv = buildCsvRows(items);
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  const filename = `youtube_research_${timestamp}.csv`;
-  const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  statusEl.textContent = t("app.status.csvExported", { count: items.length });
-}
-
-function exportXlsx(items) {
-  if (!items.length) {
-    statusEl.textContent = t("app.status.noExportData");
-    return;
-  }
-  const header = [
-    t("app.exportHeader.title"), t("app.exportHeader.channel"), t("app.exportHeader.views"), t("app.exportHeader.likes"), t("app.exportHeader.comments"),
-    t("app.exportHeader.subscribers"), t("app.exportHeader.engagement"), t("app.exportHeader.duration"), t("app.exportHeader.published"), t("app.exportHeader.genre"), t("app.exportHeader.tags"), t("app.exportHeader.url"),
-  ];
-  const rows = items.map((item) => [
-    item.title || "",
-    item.channel_title || "",
-    item.view_count || 0,
-    item.like_count || 0,
-    item.comment_count || 0,
-    item.subscriber_count || 0,
-    Number(item.engagement_rate || 0) * 100,
-    item.duration_seconds || 0,
-    item.published_at || "",
-    getCategoryName(item.category_id),
-    (item.tags || []).join("|"),
-    item.video_url || "",
-  ]);
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, t("app.xlsxSheetName"));
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  XLSX.writeFile(wb, `youtube_research_${timestamp}.xlsx`);
-  statusEl.textContent = t("app.status.xlsxExported", { count: items.length });
 }
 
 function formatViewCount(n) {
@@ -705,7 +534,7 @@ function renderTrendCharts(items) {
           const index = elements[0].index;
           const clickedTag = tagLabels[index];
           chartFilter.tag = chartFilter.tag === clickedTag ? null : clickedTag;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -744,37 +573,7 @@ function renderTrendCharts(items) {
           const index = elements[0].index;
           const label = viewRangesRaw.labels[index];
           chartFilter.viewRange = chartFilter.viewRange === label ? null : label;
-          rerenderWithEngagementFilter();
-        }
-      },
-    },
-  });
-
-  const engHist = createHistogram(items.map((i) => Number(i.engagement_rate || 0)), 7);
-  const engLabelsRaw = [...engHist.labels];
-  engHist.labels = engHist.labels.map((l) => {
-    const [a, b] = l.split("-");
-    return `~${Number(b).toFixed(1)}%`;
-  });
-  engHist.labels.reverse();
-  engHist.counts.reverse();
-  charts.engagement = new Chart(engagementChartCanvas, {
-    type: "bar",
-    data: {
-      labels: engHist.labels,
-      datasets: [{
-        data: engHist.counts,
-        backgroundColor: graphColor,
-      }],
-    },
-    options: {
-      ...chartOptions(t("app.chart.axisCount"), t("app.chart.axisEngRange"), "y"),
-      onClick: (event, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const label = engLabelsRaw[index];
-          chartFilter.engRange = chartFilter.engRange === label ? null : label;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -806,7 +605,7 @@ function renderTrendCharts(items) {
           const index = elements[0].index;
           const clicked = countryLabels[index];
           chartFilter.country = chartFilter.country === clicked ? null : clicked;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -843,7 +642,7 @@ function renderTrendCharts(items) {
           // hourLabels はreverse()されているので実際の時間に変換
           const hourNum = 23 - index;
           chartFilter.hour = chartFilter.hour === hourNum ? null : hourNum;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
       scales: {
@@ -892,7 +691,7 @@ function renderTrendCharts(items) {
           const index = elements[0].index;
           const clicked = countryViewLabels[index];
           chartFilter.country = chartFilter.country === clicked ? null : clicked;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -932,43 +731,6 @@ function renderTrendCharts(items) {
     },
   });
 
-  // --- カテゴリ別推定収益 ---
-  const categoryRevenueMap = {};
-  items.forEach((item) => {
-    const key = getCategoryName(item.category_id);
-    const isShort = (item.duration_seconds || 0) <= 180;
-    const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(item.category_id);
-    const revenue = Math.round((Number(item.view_count || 0) * cpm) / 1000);
-    categoryRevenueMap[key] = (categoryRevenueMap[key] || 0) + revenue;
-  });
-  const categoryRevenueLabels = Object.keys(categoryRevenueMap).sort((a, b) => categoryRevenueMap[b] - categoryRevenueMap[a]);
-  const categoryRevenueValues = categoryRevenueLabels.map((k) => Math.round(categoryRevenueMap[k] / 1000));
-
-  charts.categoryRevenue = new Chart(categoryRevenueChartCanvas, {
-    type: "bar",
-    data: {
-      labels: categoryRevenueLabels,
-      datasets: [{
-        data: categoryRevenueValues,
-        backgroundColor: graphColor,
-      }],
-    },
-    options: {
-      ...chartOptions(t("app.chart.axisRevenueSum"), t("app.chart.axisCategory"), "y"),
-      onClick: (event, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const clickedCategory = categoryRevenueLabels[index];
-          const categoryId = categoryIdFromName(clickedCategory);
-          if (categoryId) {
-            categoryFilterInput.value = categoryId;
-            runSearch(new Event("submit"));
-          }
-        }
-      },
-    },
-  });
-
   // --- 曜日別投稿動画数 ---
   const weekdayCounts = new Array(7).fill(0);
   items.forEach((item) => {
@@ -997,7 +759,7 @@ function renderTrendCharts(items) {
           // weekdayLabels はreverse()されているので実際の曜日番号に変換
           const dayNum = 6 - index;
           chartFilter.weekday = chartFilter.weekday === dayNum ? null : dayNum;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -1046,7 +808,7 @@ function renderTrendCharts(items) {
           const index = elements[0].index;
           const clickedWord = titleWordLabels[index];
           chartFilter.titleWord = chartFilter.titleWord === clickedWord ? null : clickedWord;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -1129,12 +891,7 @@ function applyListSort(items) {
   const sorted = [...items];
   sorted.sort((a, b) => {
     let va, vb;
-    if (key === 'revenue') {
-      const isShortA = (a.duration_seconds || 0) <= 180;
-      const isShortB = (b.duration_seconds || 0) <= 180;
-      va = (a.view_count || 0) * (isShortA ? loadGenreCpm('short') : loadGenreCpm(a.category_id)) / 1000;
-      vb = (b.view_count || 0) * (isShortB ? loadGenreCpm('short') : loadGenreCpm(b.category_id)) / 1000;
-    } else if (key === 'published_at') {
+    if (key === 'published_at') {
       va = new Date(a.published_at).getTime();
       vb = new Date(b.published_at).getTime();
     } else {
@@ -1221,18 +978,14 @@ function renderListResults(items) {
 
   const rows = items.map((item) => {
     const published = new Date(item.published_at).toLocaleDateString(currentLocale());
-    const engagementRate = Number(item.engagement_rate || 0);
     const isFav = isFavorite(item.video_url);
     const videoId = (item.video_url || "").replace("https://www.youtube.com/watch?v=", "");
-    const isShort = (item.duration_seconds || 0) <= 180;
-    const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(item.category_id);
-    const revenueStr = formatRevenue(Number(item.view_count || 0), cpm);
     const categoryName = getCategoryName(item.category_id);
     return `
       <tr class="list-row" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}">
         <td class="list-col-thumb">
           <div class="list-thumb-wrap thumb-play-btn" data-video-id="${videoId}" data-title="${item.title.replace(/"/g, '&quot;')}" data-video-url="${item.video_url}" role="button" tabindex="0" aria-label="${t("app.card.previewAria")}">
-            <img src="${item.thumbnail_url}" alt="${item.title}" loading="lazy" width="80" height="45" />
+            <img src="${item.thumbnail_url}" alt="${item.title}" loading="lazy" width="120" height="70" />
             <span class="play-icon-overlay list-play-icon" aria-hidden="true">&#9654;</span>
           </div>
         </td>
@@ -1245,10 +998,8 @@ function renderListResults(items) {
         <td class="list-col-genre">${categoryName}</td>
         <td class="list-col-subs">${formatViewCount(item.subscriber_count)}</td>
         <td class="list-col-views">${formatViewCount(item.view_count)}</td>
-        <td class="list-col-eng">${engagementRate.toFixed(1)}%</td>
         <td class="list-col-duration">${item.duration_seconds ? t("app.list.durationValue", { m: Math.floor(item.duration_seconds/60), s: item.duration_seconds%60 }) : '-'}</td>
         <td class="list-col-date">${published}</td>
-        <td class="list-col-revenue"><span class="revenue-badge">${revenueStr}</span></td>
       </tr>
     `;
   }).join("");
@@ -1272,10 +1023,8 @@ function renderListResults(items) {
             <th class="list-col-genre">${t("app.list.genre")}</th>
             ${thSort('subscriber_count', t("app.list.subscribers"), 'list-col-subs')}
             ${thSort('view_count', t("app.list.views"), 'list-col-views')}
-            ${thSort('engagement_rate', t("app.list.engRate"), 'list-col-eng')}
             ${thSort('duration_seconds', t("app.list.duration"), 'list-col-duration')}
             ${thSort('published_at', t("app.list.published"), 'list-col-date')}
-            ${thSort('revenue', t("app.list.revenue"), 'list-col-revenue')}
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1292,7 +1041,7 @@ function renderListResults(items) {
         listSortState.key = key;
         listSortState.asc = false;
       }
-      rerenderWithEngagementFilter();
+      rerenderWithFilters();
     });
   });
 
@@ -1342,14 +1091,9 @@ function renderCardResults(items) {
     .map((item) => {
       const tags = (item.tags || []).slice(0, 8).join(", ");
       const published = new Date(item.published_at).toLocaleString(currentLocale());
-      const engagementRate = Number(item.engagement_rate || 0);
       const categoryName = getCategoryName(item.category_id);
       const isFav = isFavorite(item.video_url);
       const videoId = (item.video_url || "").replace("https://www.youtube.com/watch?v=", "");
-      // ショート動画（3分以下）はショートCPM、それ以外はジャンル別CPM
-      const isShort = (item.duration_seconds || 0) <= 180;
-      const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(item.category_id);
-      const revenueStr = formatRevenue(Number(item.view_count || 0), cpm);
       return `
         <article class="card">
           <div class="card-thumb-wrap">
@@ -1364,10 +1108,9 @@ function renderCardResults(items) {
             <div><button class="channel-link" data-channel-id="${item.channel_id || ""}">${item.channel_title}</button> / ${t("app.card.publishedLabel")}: ${published} / ${t("app.card.genreLabel")}: ${categoryName}</div>
             <div class="stats">
               ${t("app.card.viewsLabel")}: ${formatViewCount(item.view_count)} ・ ${t("app.card.likesLabel")}: ${fmt(item.like_count)} ・ ${t("app.card.commentsLabel")}: ${fmt(item.comment_count)}
-              <span class="revenue-badge" title="${t("app.card.revenueTooltip", { cpm })}">${t("app.card.revenueLabel")}: ${revenueStr}<span class="revenue-note">${t("app.card.revenueNote")}</span></span>
             </div>
             <div class="stats">
-              ${t("app.card.subscribersLabel")}: ${fmt(item.subscriber_count)} ・ ${t("app.card.engagementLabel")}: ${engagementRate.toFixed(1)}% ・ ${t("app.card.durationLabel")}: ${Math.floor((item.duration_seconds||0)/60)}分${(item.duration_seconds||0)%60}秒
+              ${t("app.card.subscribersLabel")}: ${fmt(item.subscriber_count)} ・ ${t("app.card.durationLabel")}: ${Math.floor((item.duration_seconds||0)/60)}分${(item.duration_seconds||0)%60}秒
             </div>
             <div class="description">${(item.description || "").slice(0, 40)}${(item.description || "").length > 40 ? "…" : ""}</div>
             <div class="tags">${tags ? `${t("app.card.tagsLabel")}: ${tags}` : t("app.card.noTags")}</div>
@@ -1412,8 +1155,7 @@ function renderCardResults(items) {
   });
 }
 
-function applyEngagementFilter(items) {
-  const filter = engagementFilterInput.value;
+function applyResultFilters(items) {
   const durationFilter = durationFilterInput.value;
   const viewCountMin = Number(viewCountFilterInput.value || 0) * 10000;
 
@@ -1469,17 +1211,6 @@ function applyEngagementFilter(items) {
     });
   }
 
-  // エンゲージメント率レンジフィルター（グラフクリック）
-  if (chartFilter.engRange) {
-    const [minStr, maxStr] = chartFilter.engRange.split("-");
-    const min = Number(minStr);
-    const max = Number(maxStr);
-    filtered = filtered.filter((item) => {
-      const r = Number(item.engagement_rate || 0);
-      return r >= min && r < max;
-    });
-  }
-
   // 国フィルター（グラフクリック）
   if (chartFilter.country) {
     filtered = filtered.filter((item) => {
@@ -1513,24 +1244,11 @@ function applyEngagementFilter(items) {
     });
   }
 
-  // エンゲージメント率フィルター
-  if (filter !== "all") {
-    filtered = filtered.filter((item) => {
-      const rate = Number(item.engagement_rate || 0);
-      if (filter === "level1") return rate >= 0.1 && rate < 0.3;
-      if (filter === "level2") return rate >= 0.3 && rate < 0.7;
-      if (filter === "level3") return rate >= 0.7 && rate < 1.5;
-      if (filter === "level4") return rate >= 1.5 && rate < 3.0;
-      if (filter === "level5") return rate >= 3.0;
-      return true;
-    });
-  }
-
   return filtered;
 }
 
-function rerenderWithEngagementFilter() {
-  const filtered = applyEngagementFilter(latestItems);
+function rerenderWithFilters() {
+  const filtered = applyResultFilters(latestItems);
   const filters = [];
   if (chartFilter.tag) filters.push(t("app.chartFilter.tag", { value: chartFilter.tag }));
   if (chartFilter.viewRange) filters.push(t("app.chartFilter.viewRange", { value: chartFilter.viewRange }));
@@ -1584,7 +1302,7 @@ async function runSearch(event) {
     }
     latestItems = data.items || [];
     chartFilter = { tag: null, viewRange: null, engRange: null, country: null, weekday: null, hour: null, titleWord: null };
-    rerenderWithEngagementFilter();
+    rerenderWithFilters();
     updateVideoSchema(latestItems);
     if (q) addToHistory(q, {
       publishedAfter,
@@ -1706,20 +1424,11 @@ function renderComparisonSummary(dataArr) {
 
   const rows = dataArr.map(({ keyword, color, items }) => {
     const avgView = Math.round(calcAvg(items.map((i) => Number(i.view_count || 0))));
-    const avgEng  = (calcAvg(items.map((i) => Number(i.engagement_rate || 0)))).toFixed(1);
     const count   = items.length;
-    // 推定平均収益: ジャンルが混在するため全体平均CPMで概算
-    const avgCpm  = Math.round(calcAvg(items.map((i) => {
-      const isShort = (i.duration_seconds || 0) <= 180;
-      return isShort ? loadGenreCpm("short") : loadGenreCpm(i.category_id);
-    })));
-    const avgRev  = formatRevenue(avgView, avgCpm);
     return `<tr>
       <td><span class="compare-dot-inline" style="background:${color.label};"></span>${keyword}</td>
       <td>${formatViewCount(avgView)}</td>
-      <td>${avgEng}%</td>
       <td>${t("app.compareSummary.countUnit", { count })}</td>
-      <td>${avgRev}</td>
     </tr>`;
   }).join("");
 
@@ -1730,9 +1439,7 @@ function renderComparisonSummary(dataArr) {
         <tr>
           <th>${t("app.compareSummary.keyword")}</th>
           <th>${t("app.compareSummary.avgViews")}</th>
-          <th>${t("app.compareSummary.avgEngagement")}</th>
           <th>${t("app.compareSummary.count")}</th>
-          <th>${t("app.compareSummary.avgRevenue")}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1821,7 +1528,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const clickedTag = tagLabels[index];
           chartFilter.tag = chartFilter.tag === clickedTag ? null : clickedTag;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -1846,35 +1553,6 @@ function renderComparisonCharts(dataArr) {
       })),
     },
     options: multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisViewRange"), "y"),
-  });
-
-  // --- エンゲージメント率分布（固定ビン） ---
-  const ENG_BINS = [
-    { label: "~0.1%",  min: 0,   max: 0.1 },
-    { label: "~0.3%",  min: 0.1, max: 0.3 },
-    { label: "~0.7%",  min: 0.3, max: 0.7 },
-    { label: "~1.5%", min: 0.7, max: 1.5 },
-    { label: "~3.0%", min: 1.5, max: 3.0 },
-    { label: "~5.0%", min: 3.0, max: 5.0 },
-    { label: "5.0%+", min: 5.0, max: Infinity },
-  ];
-  const engBinsReversed = [...ENG_BINS].reverse();
-  charts.engagement = new Chart(engagementChartCanvas, {
-    type: "bar",
-    data: {
-      labels: engBinsReversed.map((b) => b.label),
-      datasets: dataArr.map(({ keyword, color, items }) => ({
-        label: keyword,
-        data: engBinsReversed.map((b) =>
-          items.filter((i) => {
-            const r = Number(i.engagement_rate || 0);
-            return r >= b.min && (b.max === Infinity ? true : r < b.max);
-          }).length
-        ),
-        backgroundColor: color.solid,
-      })),
-    },
-    options: multiChartOptions(t("app.chart.axisCount"), t("app.chart.axisEngRange"), "y"),
   });
 
   // --- 国別分布 ---
@@ -1909,7 +1587,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const clicked = allCountries[index];
           chartFilter.country = chartFilter.country === clicked ? null : clicked;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -1940,7 +1618,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const hourNum = 23 - index;
           chartFilter.hour = chartFilter.hour === hourNum ? null : hourNum;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
       scales: {
@@ -1991,7 +1669,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const clicked = allCountriesView[index];
           chartFilter.country = chartFilter.country === clicked ? null : clicked;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -2030,41 +1708,6 @@ function renderComparisonCharts(dataArr) {
     },
   });
 
-  // --- カテゴリ別推定収益 ---
-  const allCatsRev = [...new Set(
-    dataArr.flatMap((d) => d.items.map((i) => getCategoryName(i.category_id)))
-  )].sort();
-  charts.categoryRevenue = new Chart(categoryRevenueChartCanvas, {
-    type: "bar",
-    data: {
-      labels: allCatsRev,
-      datasets: dataArr.map(({ keyword, color, items }) => {
-        const m = {};
-        items.forEach((i) => {
-          const k = getCategoryName(i.category_id);
-          const isShort = (i.duration_seconds || 0) <= 180;
-          const cpm = isShort ? loadGenreCpm("short") : loadGenreCpm(i.category_id);
-          m[k] = (m[k] || 0) + Math.round((Number(i.view_count || 0) * cpm) / 1000);
-        });
-        return { label: keyword, data: allCatsRev.map((k) => Math.round((m[k] || 0) / 1000)), backgroundColor: color.solid };
-      }),
-    },
-    options: {
-      ...multiChartOptions(t("app.chart.axisRevenueSum"), t("app.chart.axisCategory"), "y"),
-      onClick: (event, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const clickedCategory = allCatsRev[index];
-          const categoryId = categoryIdFromName(clickedCategory);
-          if (categoryId) {
-            categoryFilterInput.value = categoryId;
-            runSearch(new Event("submit"));
-          }
-        }
-      },
-    },
-  });
-
   // --- 曜日別投稿動画数 ---
   const weekdayLabelsComp = [0, 1, 2, 3, 4, 5, 6].map(weekdayName).reverse();
   charts.weekday = new Chart(weekdayChartCanvas, {
@@ -2087,7 +1730,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const dayNum = 6 - index;
           chartFilter.weekday = chartFilter.weekday === dayNum ? null : dayNum;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -2138,7 +1781,7 @@ function renderComparisonCharts(dataArr) {
           const index = elements[0].index;
           const clickedWord = titleWordLabelsComp[index];
           chartFilter.titleWord = chartFilter.titleWord === clickedWord ? null : clickedWord;
-          rerenderWithEngagementFilter();
+          rerenderWithFilters();
         }
       },
     },
@@ -2483,14 +2126,11 @@ renderKeywordRanking();
 
 form.addEventListener("submit", runSearch);
 document.getElementById("compare-toggle-btn").addEventListener("click", toggleCompareMode);
-engagementFilterInput.addEventListener("change", rerenderWithEngagementFilter);
 durationFilterInput.addEventListener("change", () => { runSearch(new Event("submit")); });
-viewCountFilterInput.addEventListener("input", rerenderWithEngagementFilter);
+viewCountFilterInput.addEventListener("input", rerenderWithFilters);
 publishedAfterInput.addEventListener("change", () => { runSearch(new Event("submit")); });
-languageFilterInput.addEventListener("change", () => { rerenderWithEngagementFilter(); runSearch(new Event("submit")); });
+languageFilterInput.addEventListener("change", () => { rerenderWithFilters(); runSearch(new Event("submit")); });
 regionFilterInput.addEventListener("change", () => { runSearch(new Event("submit")); });
-exportCsvBtn.addEventListener("click", () => exportCsv(applyEngagementFilter(latestItems)));
-exportXlsxBtn.addEventListener("click", () => exportXlsx(applyEngagementFilter(latestItems)));
 
 // --- 設定モーダル ---
 const settingsBtn = document.getElementById("settings-btn");
@@ -2504,11 +2144,6 @@ const keyStatusEl = document.getElementById("key-status");
 settingsBtn.addEventListener("click", () => {
   settingsModal.style.display = "flex";
   loadKeys();
-  // Sync CPM input with stored value
-  const cpmInput = document.getElementById("cpm-input");
-  if (cpmInput) cpmInput.value = loadCpm();
-  // Sync genre CPM inputs
-  renderGenreCpmList();
 });
 modalCloseBtn.addEventListener("click", () => {
   settingsModal.style.display = "none";
@@ -2583,83 +2218,6 @@ addKeyBtn.addEventListener("click", async () => {
   }
 });
 categoryFilterInput.addEventListener("change", () => { runSearch(new Event("submit")); });
-
-// --- CPM保存ボタン ---
-const cpmInput = document.getElementById("cpm-input");
-const cpmSaveBtn = document.getElementById("cpm-save-btn");
-const cpmStatusEl = document.getElementById("cpm-status");
-
-if (cpmSaveBtn) {
-  cpmSaveBtn.addEventListener("click", () => {
-    const val = Number(cpmInput.value);
-    if (!val || val < 1 || val > 1000) {
-      cpmStatusEl.className = "key-status error";
-      cpmStatusEl.textContent = t("app.status.cpmRangeError");
-      return;
-  }
-  saveCpm(val);
-  cpmStatusEl.className = "key-status";
-  cpmStatusEl.textContent = t("app.status.cpmSaved", { value: val });
-  // 即座に表示に反映（再検索不要）
-  const filtered = applyEngagementFilter(latestItems);
-  renderResults(filtered);
-  setTimeout(() => { cpmStatusEl.textContent = ""; }, 2000);
-  });
-}
-
-// --- ジャンル別CPM ---
-function renderGenreCpmList() {
-  const listEl = document.getElementById("genre-cpm-list");
-  if (!listEl) return;
-  
-  // CATEGORY_MAPのジャンル + その他・未分類
-  const allGenres = { ...Object.fromEntries(Object.keys(CATEGORY_MAP).map((id) => [id, getCategoryName(id)])), "other": t("app.category.other") };
-  
-  listEl.innerHTML = Object.entries(allGenres).map(([id, name]) => {
-    const currentVal = loadGenreCpm(id);
-    const defaultVal = GENRE_CPM_DEFAULTS[id] || loadCpm();
-    return `<div class="genre-cpm-row">
-      <span class="genre-cpm-name">${name}</span>
-      <input id="genre-cpm-${id}" type="number" min="1" max="100000" value="${currentVal}" data-default="${defaultVal}" />
-      <span class="cpm-unit">${t("app.modal.cpmUnit")}</span>
-    </div>`;
-  }).join("");
-}
-
-document.getElementById("genre-cpm-save-btn").addEventListener("click", () => {
-  const statusEl = document.getElementById("genre-cpm-status");
-  let hasError = false;
-  Object.keys(GENRE_CPM_DEFAULTS).forEach((id) => {
-    const input = document.getElementById(`genre-cpm-${id}`);
-    if (input) {
-      const val = Number(input.value);
-      if (val >= 1) {
-        saveGenreCpm(id, val);
-      } else {
-        hasError = true;
-      }
-    }
-  });
-  if (hasError) {
-    statusEl.className = "key-status error";
-    statusEl.textContent = t("app.status.genreCpmError");
-  } else {
-    statusEl.className = "key-status";
-    statusEl.textContent = t("app.status.genreCpmSaved");
-    const filtered = applyEngagementFilter(latestItems);
-    renderResults(filtered);
-    setTimeout(() => { statusEl.textContent = ""; }, 2000);
-  }
-});
-
-document.getElementById("genre-cpm-reset-btn").addEventListener("click", () => {
-  resetAllGenreCpm();
-  renderGenreCpmList();
-  const statusEl = document.getElementById("genre-cpm-status");
-  statusEl.className = "key-status";
-  statusEl.textContent = t("app.status.genreCpmReset");
-  setTimeout(() => { statusEl.textContent = ""; }, 2000);
-});
 
 // --- SEO: VideoObject スキーマ動的更新 ---
 function updateVideoSchema(items) {
@@ -2740,7 +2298,7 @@ function closeVideoPreview() {
     if (compareMode && comparisonData.length) {
       renderComparisonCharts(comparisonData);
     } else if (latestItems.length) {
-      renderTrendCharts(applyEngagementFilter(latestItems));
+      renderTrendCharts(applyResultFilters(latestItems));
     }
   });
 
@@ -2752,7 +2310,7 @@ function closeVideoPreview() {
     if (compareMode && comparisonData.length) {
       renderComparisonCharts(comparisonData);
     } else if (latestItems.length) {
-      renderTrendCharts(applyEngagementFilter(latestItems));
+      renderTrendCharts(applyResultFilters(latestItems));
     }
   });
 })();
@@ -2781,7 +2339,7 @@ function closeVideoPreview() {
     }
     // 現在の検索結果を再描画
     if (latestItems && latestItems.length) {
-      renderResults(applyEngagementFilter(latestItems));
+      renderResults(applyResultFilters(latestItems));
     }
   }
 

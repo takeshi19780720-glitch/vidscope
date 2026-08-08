@@ -42,7 +42,6 @@
   <link rel="stylesheet" href="/static/style.css" />
   <script src="/static/i18n/i18n.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
 
   <!-- 構造化データ: WebSite + SearchAction -->
   <script type="application/ld+json">
@@ -135,17 +134,6 @@
           <option value="27" data-i18n="app.category.27">教育</option>
           <option value="28" data-i18n="app.category.28">科学・テクノロジー</option>
           <option value="29" data-i18n="app.category.29">非営利・社会活動</option>
-        </select>
-      </label>
-      <label class="filter-item">
-        <span data-i18n="app.filters.engagementLabel">エンゲージメント率</span>
-        <select id="engagement-filter">
-          <option value="all" data-i18n="app.filters.engagementAll">すべて</option>
-          <option value="level1" data-i18n="app.filters.engagementLevel1">10〜30%未満</option>
-          <option value="level2" data-i18n="app.filters.engagementLevel2">30〜70%未満</option>
-          <option value="level3" data-i18n="app.filters.engagementLevel3">70〜150%未満</option>
-          <option value="level4" data-i18n="app.filters.engagementLevel4">150〜300%未満</option>
-          <option value="level5" data-i18n="app.filters.engagementLevel5">300%以上</option>
         </select>
       </label>
       <label class="filter-item">
@@ -252,13 +240,6 @@
           </div>
           <canvas id="view-chart"></canvas>
         </div>
-        <div class="trend-card" data-graph-id="engagement-chart">
-          <div class="trend-card-header">
-            <h3 data-i18n="app.graph.engagementChart">エンゲージメント率分布</h3>
-            <button type="button" class="graph-toggle-btn" data-graph-id="engagement-chart" data-i18n="app.graph.hide">非表示</button>
-          </div>
-          <canvas id="engagement-chart"></canvas>
-        </div>
         <div class="trend-card" data-graph-id="category-chart">
           <div class="trend-card-header">
             <h3 data-i18n="app.graph.categoryChart">カテゴリ別動画数</h3>
@@ -272,13 +253,6 @@
             <button type="button" class="graph-toggle-btn" data-graph-id="category-view-chart" data-i18n="app.graph.hide">非表示</button>
           </div>
           <canvas id="category-view-chart"></canvas>
-        </div>
-        <div class="trend-card" data-graph-id="category-revenue-chart">
-          <div class="trend-card-header">
-            <h3 data-i18n="app.graph.categoryRevenueChart">カテゴリ別推定収益（合計）</h3>
-            <button type="button" class="graph-toggle-btn" data-graph-id="category-revenue-chart" data-i18n="app.graph.hide">非表示</button>
-          </div>
-          <canvas id="category-revenue-chart"></canvas>
         </div>
         <div class="trend-card" data-graph-id="tag-chart">
           <div class="trend-card-header">
@@ -316,10 +290,6 @@
           <canvas id="correlation-chart"></canvas>
         </div>
       </div>
-    </section>
-    <section class="results-toolbar">
-      <button id="export-csv-btn" type="button" class="youtube-btn cpm-save-btn" data-i18n="app.exportCsv">CSVエクスポート</button>
-      <button id="export-xlsx-btn" type="button" class="youtube-btn cpm-save-btn" data-i18n="app.exportXlsx">Excelエクスポート</button>
     </section>
     <div class="results-header">
       <h2 class="results-title" data-i18n="app.resultsTitle">検索結果</h2>
@@ -367,36 +337,6 @@
           </ol>
           <p data-i18n="app.modal.manualNote">※ 複数のプロジェクトでキーを作成すると、クォータ超過時に自動でローテーションされます。</p>
         </details>
-        <hr style="border-color:var(--border2); margin:20px 0;" />
-        <h3 data-i18n="app.modal.genreCpmTitle">ジャンル別CPM設定</h3>
-        <p class="modal-desc" data-i18n="app.modal.genreCpmDesc">ジャンルごとにCPMを個別設定します。設定したCPMが各動画の推定収益計算に使用されます。</p>
-        <div id="genre-cpm-list" class="genre-cpm-list"></div>
-        <div class="genre-cpm-row" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border2);">
-          <span class="genre-cpm-name" style="font-weight:bold; color:var(--text-primary);" data-i18n="app.modal.shortVideoLabel">ショート動画</span>
-          <input id="genre-cpm-short" type="number" min="1" max="100000" value="10" data-default="10" />
-          <span class="cpm-unit" data-i18n="app.modal.cpmUnit">円</span>
-        </div>
-        <div class="genre-cpm-actions">
-          <button id="genre-cpm-reset-btn" type="button" class="clear-history-btn" data-i18n="app.modal.genreResetBtn">全てデフォルトに戻す</button>
-          <button id="genre-cpm-save-btn" type="button" class="youtube-btn cpm-save-btn" data-i18n="app.modal.genreSaveBtn">保存</button>
-        </div>
-        <p id="genre-cpm-status" class="key-status"></p>
-        <div class="cpm-reference">
-          <p class="cpm-ref-title" data-i18n="app.modal.cpmRefTitle">📊 CPM相場（参考）</p>
-          <table>
-            <tr><td data-i18n="app.modal.cpmRefFinance">金融・投資系</td><td data-i18n="app.modal.cpmRangeFinance">1,000〜2,000円+</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefRealEstate">不動産・BtoB</td><td data-i18n="app.modal.cpmRangeRealEstate">1,000〜2,000円+</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefEducation">教育・ハウツー</td><td data-i18n="app.modal.cpmRangeEducation">200〜800円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefIt">IT・ガジェット</td><td data-i18n="app.modal.cpmRangeIt">200〜600円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefHealth">健康・美容</td><td data-i18n="app.modal.cpmRangeHealth">150〜500円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefGame">ゲーム</td><td data-i18n="app.modal.cpmRangeGame">50〜200円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefEntertainment">エンタメ・雑談</td><td data-i18n="app.modal.cpmRangeEntertainment">50〜150円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefMusic">音楽</td><td data-i18n="app.modal.cpmRangeMusic">30〜100円</td></tr>
-            <tr><td data-i18n="app.modal.cpmRefKids">子供向け</td><td data-i18n="app.modal.cpmRangeKids">20〜80円</td></tr>
-          </table>
-          <p class="cpm-ref-note1" data-i18n="app.modal.cpmRefNote1">※ 国・地域・季節・広告枠・視聴者属性により大きく変動します</p>
-          <p class="cpm-ref-note2" data-i18n="app.modal.cpmRefNote2">出典: Shopify Japan、StockSun株式会社、VLINK MAG等のウェブ記事を総合した目安値</p>
-        </div>
       </div>
     </div>
   </div>

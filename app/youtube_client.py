@@ -187,7 +187,6 @@ class YouTubeClient:
             duration_seconds = self._parse_iso8601_duration_to_seconds(
                 content_details.get("duration", "")
             )
-            engagement_rate = (view_count / subscriber_count) if subscriber_count > 0 else 0.0
             thumbs = snippet.get("thumbnails", {})
             thumbnail_url = (
                 thumbs.get("high", {}).get("url")
@@ -209,7 +208,6 @@ class YouTubeClient:
                     "channel_title": snippet.get("channelTitle", ""),
                     "channel_id": channel_id,
                     "subscriber_count": subscriber_count,
-                    "engagement_rate": engagement_rate,
                     "category_id": snippet.get("categoryId", ""),
                     "default_language": snippet.get("defaultLanguage", ""),
                     "default_audio_language": snippet.get("defaultAudioLanguage", ""),

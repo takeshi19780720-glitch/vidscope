@@ -204,8 +204,9 @@ button:hover {
 .filters-row {
   width: calc(100% - 48px);
   max-width: none;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   margin: 0 24px 16px;
 }

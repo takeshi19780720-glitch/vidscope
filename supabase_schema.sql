@@ -83,6 +83,7 @@ returns table(date text, count bigint) language sql stable as $$
   from page_views
   where "timestamp" >= now() - ((days_back + offset_days) || ' days')::interval
     and "timestamp" < now() - (offset_days || ' days')::interval
+    and not is_bot_page_view(user_agent, ip, path)
   group by 1 order by 1;
 $$;
 
@@ -190,13 +191,18 @@ returns boolean language sql immutable as $$
         or lower(user_agent) like '%yandexbot%'
         or lower(user_agent) like '%applebot%'
         or lower(user_agent) like '%bingpreview%'
+        or lower(user_agent) like '%headlesschrom%'
       )
     )
     or
     -- 既知のbot/クローラーIPレンジ（UA偽装対策。43.128.0.0/10 = Tencent Cloud、66.249.64.0/19 = Googlebot）
+    -- 2026-08-30スパイク対応: Tencent Cloud追加レンジ(1.12.0.0/14, 118.24.0.0/16, 101.32.0.0/15)を追加
     (
       ip is not null and ip != '' and ip ~ '^[0-9.]+$' and (
         inet(ip) <<= inet '43.128.0.0/10'
+        or inet(ip) <<= inet '1.12.0.0/14'
+        or inet(ip) <<= inet '118.24.0.0/16'
+        or inet(ip) <<= inet '101.32.0.0/15'
         or inet(ip) <<= inet '66.249.64.0/19'
       )
     )
@@ -216,6 +222,12 @@ returns boolean language sql immutable as $$
         or lower(path) like '/.idea%' or lower(path) like '/server-status%'
         or lower(path) like '/telescope%' or lower(path) like '/_profiler%'
         or lower(path) like '/debug/default/view%' or lower(path) like '/geoserver%'
+        -- バックアップ探索系（プレフィックス）
+        or lower(path) like '/backup%' or lower(path) like '/backups%'
+        or lower(path) like '/dump%'
+        -- バックアップ/ダンプファイル拡張子（サフィックス）
+        or lower(path) like '%.bak' or lower(path) like '%.sql'
+        or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
       )
     );
 $$;

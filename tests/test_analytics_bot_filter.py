@@ -74,6 +74,14 @@ def _sql_scan_path_prefixes() -> list[str]:
     return re.findall(r"lower\(path\)\s+like\s+'([^%']+)%'", path_block)
 
 
+def _sql_scan_path_suffixes() -> list[str]:
+    """SQL内の lower(path) like '%.xxx' のサフィックス部分を全て抽出する。"""
+    body = _extract_is_bot_page_view_sql()
+    path_block_start = body.index("脆弱性スキャンで狙われる典型パス")
+    path_block = body[path_block_start:]
+    return re.findall(r"lower\(path\)\s+like\s+'(%\.[^'%]+)'", path_block)
+
+
 def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | None) -> bool:
     """is_bot_page_view() のSQLロジックをPythonで再現した参照実装。
 
@@ -87,6 +95,7 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
     ua_like_keywords = _sql_ua_like_keywords()
     ip_cidrs = _sql_ip_cidrs()
     scan_prefixes = _sql_scan_path_prefixes()
+    scan_suffixes = _sql_scan_path_suffixes()
 
     ua_match = False
     if user_agent:
@@ -107,7 +116,10 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
     path_match = False
     if path:
         path_lower = path.lower()
-        path_match = any(path_lower.startswith(prefix) for prefix in scan_prefixes)
+        if any(path_lower.startswith(prefix) for prefix in scan_prefixes):
+            path_match = True
+        elif any(path_lower.endswith(suffix.lstrip("%")) for suffix in scan_suffixes):
+            path_match = True
 
     return ua_match or ip_match or path_match
 
@@ -451,6 +463,133 @@ class AnalyticsExecutorTests(unittest.TestCase):
         analytics._analytics_executor = ThreadPoolExecutor(
             max_workers=analytics._ANALYTICS_MAX_WORKERS, thread_name_prefix="analytics-io"
         )
+
+
+class NewBotFilterTests(unittest.TestCase):
+    """2026-08-30スパイク対応で追加したフィルタのテスト。"""
+
+    # ---- HeadlessChrome UA ----
+
+    def test_headlesschrome_ua_is_bot(self):
+        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/114.0.5735.90 Safari/537.36"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_headlesschromium_ua_is_bot(self):
+        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChromium/114.0.5735.90 Safari/537.36"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_regular_chrome_is_not_bot(self):
+        # 通常のChromeは 'HeadlessChrome' を含まないため誤検知されない
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+
+    # ---- Tencent Cloud 追加IPレンジ ----
+
+    def test_tencent_beijing_1_12_is_bot(self):
+        # 1.12.0.0/14 (1.12.0.0 〜 1.15.255.255)
+        self.assertTrue(analytics._is_bot_ip("1.14.110.85"))
+
+    def test_tencent_beijing_118_24_is_bot(self):
+        # 118.24.0.0/16
+        self.assertTrue(analytics._is_bot_ip("118.24.135.34"))
+
+    def test_tencent_hk_101_32_is_bot(self):
+        # 101.32.0.0/15 (101.32.0.0 〜 101.33.255.255)
+        self.assertTrue(analytics._is_bot_ip("101.32.49.171"))
+
+    def test_just_outside_1_12_range_is_not_bot(self):
+        # 1.12.0.0/14 の直前(1.11.255.255)は範囲外
+        self.assertFalse(analytics._is_bot_ip("1.11.255.255"))
+
+    def test_just_outside_101_32_range_is_not_bot(self):
+        # 101.32.0.0/15 の直後(101.34.0.0)は範囲外
+        self.assertFalse(analytics._is_bot_ip("101.34.0.0"))
+
+    # ---- バックアップ探索パス（プレフィックス） ----
+
+    def test_backup_prefix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/backup/database.sql"))
+
+    def test_backups_prefix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/backups/database.sql"))
+
+    def test_dump_prefix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/dump/vidscope.sql"))
+
+    # ---- バックアップファイル拡張子（サフィックス） ----
+
+    def test_bak_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/config/settings.bak"))
+
+    def test_sql_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/backups/database.sql"))
+
+    def test_zip_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/vidscope.zip"))
+
+    def test_tar_gz_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/vidscope.tar.gz"))
+
+    def test_normal_path_with_sql_keyword_not_blocked(self):
+        # /blog/sql-tutorial のような正当なパスが誤検知されないこと
+        self.assertFalse(analytics._is_scan_path("/blog/sql-tutorial"))
+
+    def test_case_insensitive_zip_suffix(self):
+        self.assertTrue(analytics._is_scan_path("/Archive.ZIP"))
+
+
+class NewPatternSqlEquivalenceTests(unittest.TestCase):
+    """新パターン（HeadlessChrome UA / 追加IPレンジ / バックアップパス）のSQL/Python等価性テスト。"""
+
+    NEW_CASES = [
+        # (user_agent, ip, path, expected_is_bot)
+        ("Mozilla/5.0 HeadlessChrome/114.0.5735.90 Safari/537.36", "1.2.3.4", "/", True),
+        ("Mozilla/5.0 HeadlessChromium/114.0 Safari/537.36", "1.2.3.4", "/", True),
+        ("Mozilla/5.0 (Windows NT 10.0) Chrome/125.0.0.0 Safari/537.36", "1.2.3.4", "/", False),
+        (None, "1.14.110.85", "/", True),
+        (None, "118.24.135.34", "/", True),
+        (None, "101.32.49.171", "/", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/backups/database.sql", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/vidscope.zip", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/data.tar.gz", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/blog/sql-tutorial", False),
+    ]
+
+    def test_new_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_CASES:
+            with self.subTest(user_agent=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python判定={python_result} SQL判定={sql_result} が不一致: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+
+    def test_sql_scan_path_suffixes_match_python_suffixes(self):
+        """SQLのサフィックスLIKEパターンがPython側 _SCAN_PATH_SUFFIXES と一致すること。"""
+        sql_raw = _sql_scan_path_suffixes()
+        # SQLでは '%.bak' のように格納されているため先頭の'%'を除去して比較
+        sql_suffixes = {s.lstrip("%") for s in sql_raw}
+        python_suffixes = set(analytics._SCAN_PATH_SUFFIXES)
+        self.assertEqual(sql_suffixes, python_suffixes)
+
+    def test_sql_ip_cidrs_include_new_tencent_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in ("1.12.0.0/14", "118.24.0.0/16", "101.32.0.0/15"):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
 
 
 if __name__ == "__main__":

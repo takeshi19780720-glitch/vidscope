@@ -130,6 +130,8 @@ _BOT_UA_PATTERNS = (
     "petalbot", "bytespider", "gptbot", "chatgpt-user", "claudebot",
     "ccbot", "amazonbot", "meta-externalagent", "meta-externalfetcher",
     "yandexbot", "applebot", "bingpreview",
+    # --- ヘッドレスブラウザ系 ---
+    "headlesschrom",    # HeadlessChrome / HeadlessChromium両方をカバー（共通プレフィックス）
 )
 
 # 脆弱性スキャン等でよく狙われるパス（プレフィックス/完全一致）
@@ -139,6 +141,13 @@ _SCAN_PATH_PREFIXES = (
     "/.aws", "/.ssh", "/config.json", "/actuator", "/cgi-bin",
     "/.docker", "/.vscode", "/.idea", "/server-status", "/telescope",
     "/_profiler", "/debug/default/view", "/geoserver",
+    # --- バックアップ探索系 ---
+    "/backup", "/backups", "/dump",
+)
+
+# バックアップ/ダンプファイルを狙うスキャンでよく使われる拡張子（末尾一致）
+_SCAN_PATH_SUFFIXES = (
+    ".bak", ".sql", ".zip", ".tar.gz",
 )
 
 # ボット/クローラーが利用することが判明しているIPレンジ（CIDR）。
@@ -148,6 +157,10 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     # Tencent Cloud（中国）。国別TOP10のUS/HK等に大量に混入していたボット群のIP帯。
     # UAを "Mobile Safari 13.0.3 / iOS 13.2.3" 等に偽装していたため、UA判定では検出不可。
     ("43.128.0.0/10", "Tencent Cloud"),
+    # 2026-08-30のスパイクで新たに確認されたTencent Cloudの追加IPレンジ
+    ("1.12.0.0/14", "Tencent Cloud Beijing"),
+    ("118.24.0.0/16", "Tencent Cloud Beijing"),
+    ("101.32.0.0/15", "Tencent Cloud HK/Singapore"),
     # Googlebot共通クロール帯。UA判定（'googlebot'等）と二重になるが、
     # UA偽装や新規UA追加漏れに備えた保険として保持する。
     ("66.249.64.0/19", "Googlebot common crawl range"),
@@ -184,7 +197,9 @@ def _is_bot_ip(ip: str) -> bool:
 def _is_scan_path(path: str) -> bool:
     """脆弱性スキャンでよく狙われるパスかどうか判定する"""
     path_lower = path.lower()
-    return any(path_lower.startswith(prefix) for prefix in _SCAN_PATH_PREFIXES)
+    if any(path_lower.startswith(prefix) for prefix in _SCAN_PATH_PREFIXES):
+        return True
+    return any(path_lower.endswith(suffix) for suffix in _SCAN_PATH_SUFFIXES)
 
 
 def init_db():

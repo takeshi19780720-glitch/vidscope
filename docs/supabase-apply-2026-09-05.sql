@@ -49,6 +49,11 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '3.151.194.0/24'
         or inet(ip) <<= inet '54.77.166.0/24'
         or inet(ip) <<= inet '35.254.67.0/24'
+        or inet(ip) <<= inet '35.185.159.0/24'
+        or inet(ip) <<= inet '34.78.15.0/24'
+        or inet(ip) <<= inet '20.104.81.0/24'
+        or inet(ip) <<= inet '170.64.159.0/24'
+        or inet(ip) <<= inet '158.69.55.0/24'
       )
     )
     or

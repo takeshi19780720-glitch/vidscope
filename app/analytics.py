@@ -173,6 +173,13 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     ("54.77.166.0/24", "AWS EC2 eu-west-1 (confirmed crawler 2026-08-30)"),
     # Google Cloud VM: 同上、リアルユーザーがGCEからブラウズする可能性は極めて低い。
     ("35.254.67.0/24", "Google Cloud us-central1 (confirmed crawler 2026-08-30)"),
+    # 2026-09-05追加（8/30スパイクの残存主要クラウドスクレイパー）。上位2IPで401PV（全体の約50%）を占める。
+    # /16ではなく/24単位で慎重にブロックし、正当なユーザーを巻き込まないようにする。
+    ("35.185.159.0/24", "Google Cloud scraper (PV spike 2026-08-30)"),
+    ("34.78.15.0/24", "Google Cloud scraper (PV spike 2026-08-30)"),
+    ("20.104.81.0/24", "Microsoft Azure scraper (PV spike 2026-08-30)"),
+    ("170.64.159.0/24", "Vultr scraper (PV spike 2026-08-30)"),
+    ("158.69.55.0/24", "OVHcloud scraper (PV spike 2026-08-30)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(

@@ -726,5 +726,150 @@ class ExtendedSqlEquivalenceTests2026Sep(unittest.TestCase):
         self.assertEqual(sql_cidrs, python_cidrs)
 
 
+class ResidualCloudScraperFilterTests2026Sep(unittest.TestCase):
+    """2026-09-05追加(2): 8/30スパイク残存主要クラウドスクレイパー /24 x5 のテスト。"""
+
+    # ---- Google Cloud 35.185.159.0/24 ----
+
+    def test_gcp_35_185_159_is_bot(self):
+        # 35.185.159.0/24 (35.185.159.0 〜 35.185.159.255)
+        self.assertTrue(analytics._is_bot_ip("35.185.159.90"))
+
+    def test_gcp_35_185_159_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("35.185.159.255"))
+
+    def test_just_below_35_185_159_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("35.185.158.255"))
+
+    def test_just_above_35_185_159_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("35.185.160.0"))
+
+    # ---- Google Cloud 34.78.15.0/24 ----
+
+    def test_gcp_34_78_15_is_bot(self):
+        # 34.78.15.0/24 (34.78.15.0 〜 34.78.15.255)
+        self.assertTrue(analytics._is_bot_ip("34.78.15.240"))
+
+    def test_gcp_34_78_15_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.78.15.255"))
+
+    def test_just_below_34_78_15_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.78.14.255"))
+
+    def test_just_above_34_78_15_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.78.16.0"))
+
+    # ---- Microsoft Azure 20.104.81.0/24 ----
+
+    def test_azure_20_104_81_is_bot(self):
+        # 20.104.81.0/24 (20.104.81.0 〜 20.104.81.255)
+        self.assertTrue(analytics._is_bot_ip("20.104.81.161"))
+
+    def test_azure_20_104_81_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("20.104.81.255"))
+
+    def test_just_below_20_104_81_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("20.104.80.255"))
+
+    def test_just_above_20_104_81_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("20.104.82.0"))
+
+    # ---- Vultr 170.64.159.0/24 ----
+
+    def test_vultr_170_64_159_is_bot(self):
+        # 170.64.159.0/24 (170.64.159.0 〜 170.64.159.255)
+        self.assertTrue(analytics._is_bot_ip("170.64.159.93"))
+
+    def test_vultr_170_64_159_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("170.64.159.255"))
+
+    def test_just_below_170_64_159_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("170.64.158.255"))
+
+    def test_just_above_170_64_159_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("170.64.160.0"))
+
+    # ---- OVHcloud 158.69.55.0/24 ----
+
+    def test_ovh_158_69_55_is_bot(self):
+        # 158.69.55.0/24 (158.69.55.0 〜 158.69.55.255)
+        self.assertTrue(analytics._is_bot_ip("158.69.55.82"))
+
+    def test_ovh_158_69_55_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("158.69.55.255"))
+
+    def test_just_below_158_69_55_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("158.69.54.255"))
+
+    def test_just_above_158_69_55_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("158.69.56.0"))
+
+
+class ResidualCloudScraperSqlEquivalenceTests2026Sep(unittest.TestCase):
+    """2026-09-05追加(2)の5レンジについてSQL/Python等価性テスト。"""
+
+    RESIDUAL_IP_CASES = [
+        # (user_agent, ip, path, expected_is_bot)
+        ("Mozilla/5.0 normal browser", "35.185.159.90", "/", True),
+        ("Mozilla/5.0 normal browser", "35.185.159.255", "/", True),
+        ("Mozilla/5.0 normal browser", "35.185.158.255", "/", False),
+        ("Mozilla/5.0 normal browser", "35.185.160.0", "/", False),
+        ("Mozilla/5.0 normal browser", "34.78.15.240", "/", True),
+        ("Mozilla/5.0 normal browser", "34.78.15.255", "/", True),
+        ("Mozilla/5.0 normal browser", "34.78.14.255", "/", False),
+        ("Mozilla/5.0 normal browser", "34.78.16.0", "/", False),
+        ("Mozilla/5.0 normal browser", "20.104.81.161", "/", True),
+        ("Mozilla/5.0 normal browser", "20.104.81.255", "/", True),
+        ("Mozilla/5.0 normal browser", "20.104.80.255", "/", False),
+        ("Mozilla/5.0 normal browser", "20.104.82.0", "/", False),
+        ("Mozilla/5.0 normal browser", "170.64.159.93", "/", True),
+        ("Mozilla/5.0 normal browser", "170.64.159.255", "/", True),
+        ("Mozilla/5.0 normal browser", "170.64.158.255", "/", False),
+        ("Mozilla/5.0 normal browser", "170.64.160.0", "/", False),
+        ("Mozilla/5.0 normal browser", "158.69.55.82", "/", True),
+        ("Mozilla/5.0 normal browser", "158.69.55.255", "/", True),
+        ("Mozilla/5.0 normal browser", "158.69.54.255", "/", False),
+        ("Mozilla/5.0 normal browser", "158.69.56.0", "/", False),
+    ]
+
+    def test_residual_ip_ranges_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.RESIDUAL_IP_CASES:
+            with self.subTest(ip=ip):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: ip={ip!r}",
+                )
+
+    def test_sql_ip_cidrs_include_residual_cloud_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in (
+            "35.185.159.0/24",
+            "34.78.15.0/24",
+            "20.104.81.0/24",
+            "170.64.159.0/24",
+            "158.69.55.0/24",
+        ):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_residual(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（残存5レンジ追加後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
+
 if __name__ == "__main__":
     unittest.main()

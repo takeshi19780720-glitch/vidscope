@@ -197,6 +197,7 @@ returns boolean language sql immutable as $$
     or
     -- 既知のbot/クローラーIPレンジ（UA偽装対策。43.128.0.0/10 = Tencent Cloud、66.249.64.0/19 = Googlebot）
     -- 2026-08-30スパイク対応: Tencent Cloud追加レンジ(1.12.0.0/14, 118.24.0.0/16, 101.32.0.0/15)を追加
+    -- 2026-09-05追加: DigitalOcean /24, AWS EC2 us-east-2/eu-west-1 /24, GCP us-central1 /24
     (
       ip is not null and ip != '' and ip ~ '^[0-9.]+$' and (
         inet(ip) <<= inet '43.128.0.0/10'
@@ -204,6 +205,10 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '118.24.0.0/16'
         or inet(ip) <<= inet '101.32.0.0/15'
         or inet(ip) <<= inet '66.249.64.0/19'
+        or inet(ip) <<= inet '167.71.6.0/24'
+        or inet(ip) <<= inet '3.151.194.0/24'
+        or inet(ip) <<= inet '54.77.166.0/24'
+        or inet(ip) <<= inet '35.254.67.0/24'
       )
     )
     or

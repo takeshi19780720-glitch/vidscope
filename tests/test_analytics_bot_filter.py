@@ -592,5 +592,139 @@ class NewPatternSqlEquivalenceTests(unittest.TestCase):
                 self.assertIn(cidr, sql_cidrs)
 
 
+class ExtendedBotFilterTests2026Sep(unittest.TestCase):
+    """2026-09-05追加フィルタのテスト（DigitalOcean/AWS/GCP IPレンジ + リファラースパム）。"""
+
+    # ---- DigitalOcean Netherlands 167.71.6.0/24 ----
+
+    def test_digitalocean_167_71_6_is_bot(self):
+        # 167.71.6.0/24 (167.71.6.0 〜 167.71.6.255)
+        self.assertTrue(analytics._is_bot_ip("167.71.6.60"))
+
+    def test_digitalocean_167_71_6_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("167.71.6.255"))
+
+    def test_just_below_167_71_6_is_not_bot(self):
+        # 167.71.6.0/24 の直前(167.71.5.255)は範囲外
+        self.assertFalse(analytics._is_bot_ip("167.71.5.255"))
+
+    def test_just_above_167_71_6_is_not_bot(self):
+        # 167.71.6.0/24 の直後(167.71.7.0)は範囲外
+        self.assertFalse(analytics._is_bot_ip("167.71.7.0"))
+
+    # ---- AWS EC2 3.151.194.0/24 (us-east-2) ----
+
+    def test_aws_ec2_us_east2_is_bot(self):
+        # 3.151.194.0/24
+        self.assertTrue(analytics._is_bot_ip("3.151.194.164"))
+
+    def test_just_outside_aws_us_east2_is_not_bot(self):
+        # 3.151.194.0/24 の直後(3.151.195.0)は範囲外
+        self.assertFalse(analytics._is_bot_ip("3.151.195.0"))
+
+    # ---- AWS EC2 54.77.166.0/24 (eu-west-1) ----
+
+    def test_aws_ec2_eu_west1_is_bot(self):
+        # 54.77.166.0/24
+        self.assertTrue(analytics._is_bot_ip("54.77.166.182"))
+
+    def test_just_outside_aws_eu_west1_is_not_bot(self):
+        # 54.77.166.0/24 の直後(54.77.167.0)は範囲外
+        self.assertFalse(analytics._is_bot_ip("54.77.167.0"))
+
+    # ---- Google Cloud 35.254.67.0/24 (us-central1) ----
+
+    def test_google_cloud_us_central1_is_bot(self):
+        # 35.254.67.0/24
+        self.assertTrue(analytics._is_bot_ip("35.254.67.46"))
+
+    def test_just_outside_gcp_range_is_not_bot(self):
+        # 35.254.67.0/24 の直後(35.254.68.0)は範囲外
+        self.assertFalse(analytics._is_bot_ip("35.254.68.0"))
+
+    # ---- リファラースパム ----
+
+    def test_spam_referer_streetfoodies_is_spam(self):
+        self.assertTrue(analytics._is_spam_referer("https://streetfoodies.dk/some/path"))
+
+    def test_spam_referer_arapidprototype_is_spam(self):
+        self.assertTrue(analytics._is_spam_referer("https://arapidprototype.com/"))
+
+    def test_spam_referer_airbase_cloud_is_spam(self):
+        self.assertTrue(analytics._is_spam_referer("https://airbase.cloud/"))
+
+    def test_spam_referer_with_www_is_spam(self):
+        self.assertTrue(analytics._is_spam_referer("https://www.streetfoodies.dk/"))
+
+    def test_spam_referer_http_no_path_is_spam(self):
+        self.assertTrue(analytics._is_spam_referer("http://arapidprototype.com"))
+
+    def test_empty_referer_is_not_spam(self):
+        self.assertFalse(analytics._is_spam_referer(""))
+
+    def test_none_referer_is_not_spam(self):
+        self.assertFalse(analytics._is_spam_referer(None))
+
+    def test_google_referer_is_not_spam(self):
+        self.assertFalse(analytics._is_spam_referer("https://www.google.com/search?q=vidscope"))
+
+    def test_twitter_referer_is_not_spam(self):
+        self.assertFalse(analytics._is_spam_referer("https://twitter.com/"))
+
+    def test_partial_domain_match_is_not_spam(self):
+        # 'streetfoodies.dk' をパスに含むだけのURLは誤検知されない
+        self.assertFalse(analytics._is_spam_referer("https://example.com/streetfoodies.dk/foo"))
+
+
+class ExtendedSqlEquivalenceTests2026Sep(unittest.TestCase):
+    """2026-09-05追加IPレンジのSQL/Python等価性テスト。"""
+
+    NEW_IP_CASES = [
+        # (user_agent, ip, path, expected_is_bot)
+        ("Mozilla/5.0 normal browser", "167.71.6.60", "/", True),
+        ("Mozilla/5.0 normal browser", "167.71.6.255", "/", True),
+        ("Mozilla/5.0 normal browser", "167.71.5.255", "/", False),
+        ("Mozilla/5.0 normal browser", "167.71.7.0", "/", False),
+        ("Mozilla/5.0 normal browser", "3.151.194.164", "/", True),
+        ("Mozilla/5.0 normal browser", "3.151.195.0", "/", False),
+        ("Mozilla/5.0 normal browser", "54.77.166.182", "/", True),
+        ("Mozilla/5.0 normal browser", "54.77.167.0", "/", False),
+        ("Mozilla/5.0 normal browser", "35.254.67.46", "/", True),
+        ("Mozilla/5.0 normal browser", "35.254.68.0", "/", False),
+    ]
+
+    def test_new_ip_ranges_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_IP_CASES:
+            with self.subTest(ip=ip):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: ip={ip!r}",
+                )
+
+    def test_sql_ip_cidrs_include_new_cloud_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in ("167.71.6.0/24", "3.151.194.0/24", "54.77.166.0/24", "35.254.67.0/24"):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_extended(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（拡張後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -164,6 +164,15 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     # Googlebot共通クロール帯。UA判定（'googlebot'等）と二重になるが、
     # UA偽装や新規UA追加漏れに備えた保険として保持する。
     ("66.249.64.0/19", "Googlebot common crawl range"),
+    # 2026-09-05追加: 8/30スパイクの残存ボット（クラウドインフラ系）
+    # DigitalOcean Netherlands: Chrome UAバージョン/OSを1バースト内でローテーション、
+    # 1分以内に13-14連射。DigitalOcean全体(167.71.0.0/16)は広すぎるため /24 に限定。
+    ("167.71.6.0/24", "DigitalOcean Netherlands (bot burst 2026-08-30)"),
+    # AWS EC2: リアルユーザーがEC2インスタンスからブラウズする可能性は極めて低い。
+    ("3.151.194.0/24", "AWS EC2 us-east-2 (confirmed crawler 2026-08-30)"),
+    ("54.77.166.0/24", "AWS EC2 eu-west-1 (confirmed crawler 2026-08-30)"),
+    # Google Cloud VM: 同上、リアルユーザーがGCEからブラウズする可能性は極めて低い。
+    ("35.254.67.0/24", "Google Cloud us-central1 (confirmed crawler 2026-08-30)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(
@@ -202,6 +211,35 @@ def _is_scan_path(path: str) -> bool:
     return any(path_lower.endswith(suffix) for suffix in _SCAN_PATH_SUFFIXES)
 
 
+# リファラースパムの既知ドメイン。
+# 「ぴったり同数リクエスト×複数ドメイン」というリファラースパム特有のパターンで検出。
+# 新たなスパムドメインが出現した場合はここに追加する。
+# 注意: Python側の書き込み時フィルタのみに使用（SQL側 is_bot_page_view() には未追加）。
+# 既存保存データは件数が少ないため遡及フィルタは不要と判断した。
+_SPAM_REFERER_DOMAINS: frozenset[str] = frozenset({
+    "streetfoodies.dk",
+    "arapidprototype.com",
+    "airbase.cloud",
+})
+
+
+def _is_spam_referer(referer: str) -> bool:
+    """リファラーURLのドメインが既知のスパムドメインに一致するか判定する。
+
+    URLからドメイン部分を抽出（プロトコル・パス・www.を除去）して照合する。
+    例: 'https://www.streetfoodies.dk/foo' -> 'streetfoodies.dk' -> True
+    """
+    if not referer:
+        return False
+    s = referer.lower().strip()
+    if "://" in s:
+        s = s.split("://", 1)[1]
+    domain = s.split("/")[0].split("?")[0].split("#")[0]
+    if domain.startswith("www."):
+        domain = domain[4:]
+    return domain in _SPAM_REFERER_DOMAINS
+
+
 def init_db():
     """テーブルはSupabase側でSQL Editorにより作成済み。起動時チェックのみ行う。"""
     if not sb.is_configured():
@@ -228,6 +266,10 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
 
     # 脆弱性スキャン対象の典型的なパスは記録しない
     if _is_scan_path(path):
+        return
+
+    # 既知のリファラースパムドメインは記録しない
+    if _is_spam_referer(referer):
         return
 
     ua = parse_ua(user_agent) if user_agent else None

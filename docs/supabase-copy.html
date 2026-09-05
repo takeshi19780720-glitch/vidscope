@@ -49,6 +49,12 @@ returns boolean language sql immutable as $$
         or lower(user_agent) like '%applebot%'
         or lower(user_agent) like '%bingpreview%'
         or lower(user_agent) like '%headlesschrom%'
+        -- 2026-09-05追加: 8/30スパイク残存266の内訳から検出されたAI/SNSクローラー
+        or lower(user_agent) like '%perplexity-user%'
+        or lower(user_agent) like '%claude-user%'
+        or lower(user_agent) like '%facebookexternalhit%'
+        or lower(user_agent) like '%whatsapp/%'
+        or lower(user_agent) like '%wordpresschecker%'
       )
     )
     or
@@ -68,6 +74,10 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '20.104.81.0/24'
         or inet(ip) <<= inet '170.64.159.0/24'
         or inet(ip) <<= inet '158.69.55.0/24'
+        -- 2026-09-05追加(3): 8/30スパイク残存266の内訳から特定された追加ボット群
+        or inet(ip) <<= inet '45.148.10.0/24'
+        or inet(ip) <<= inet '37.66.170.0/24'
+        or inet(ip) <<= inet '150.109.119.0/24'
       )
     )
     or

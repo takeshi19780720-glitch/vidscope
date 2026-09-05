@@ -130,6 +130,12 @@ _BOT_UA_PATTERNS = (
     "petalbot", "bytespider", "gptbot", "chatgpt-user", "claudebot",
     "ccbot", "amazonbot", "meta-externalagent", "meta-externalfetcher",
     "yandexbot", "applebot", "bingpreview",
+    # --- AI/SNSクローラー（2026-09-05追加: 8/30残存266の内訳から検出） ---
+    "perplexity-user",         # Perplexity-User/1.0
+    "claude-user",             # Claude-User/1.0
+    "facebookexternalhit",     # Facebookのリンククローラー
+    "whatsapp/",               # WhatsAppのリンクプレビュークローラー
+    "wordpresschecker",        # WordPress脆弱性/監視ボット
     # --- ヘッドレスブラウザ系 ---
     "headlesschrom",    # HeadlessChrome / HeadlessChromium両方をカバー（共通プレフィックス）
 )
@@ -180,6 +186,13 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     ("20.104.81.0/24", "Microsoft Azure scraper (PV spike 2026-08-30)"),
     ("170.64.159.0/24", "Vultr scraper (PV spike 2026-08-30)"),
     ("158.69.55.0/24", "OVHcloud scraper (PV spike 2026-08-30)"),
+    # 2026-09-05追加(3): 8/30スパイク残存266の内訳から特定された追加ボット群
+    # 45.148.10.0/24: Windows/Mac/Linux Chrome + Firefoxをローテーションする偽装ボット
+    ("45.148.10.0/24", "Cloud/hosting rotator bot (Chrome/Firefox 2026-08-30)"),
+    # 37.66.170.0/24: Windows/Mac/Android Chrome/Edge/Safariをローテーションする偽装ボット
+    ("37.66.170.0/24", "Cloud/hosting rotator bot (Chrome/Edge/Safari 2026-08-30)"),
+    # 150.109.119.0/24: Tencent系ボットの別IP（Mobile Safari 13.0.3 / iOS 13.2.3を偽装）
+    ("150.109.119.0/24", "Tencent Cloud spoofed Mobile Safari bot (2026-08-30)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(

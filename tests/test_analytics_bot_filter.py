@@ -871,5 +871,202 @@ class ResidualCloudScraperSqlEquivalenceTests2026Sep(unittest.TestCase):
         self.assertEqual(sql_cidrs, python_cidrs)
 
 
+class ResidualBotFilterTests2026SepRound3(unittest.TestCase):
+    """2026-09-05追加(3): 8/30スパイク残存266の内訳から特定したAI/SNSクローラーと/24ブロックのテスト。"""
+
+    # ---- AI/SNSクローラーUA ----
+
+    def test_perplexity_user_ua_is_bot(self):
+        ua = "Mozilla/5.0 (compatible; Perplexity-User/1.0; +https://www.perplexity.ai/)"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_claude_user_ua_is_bot(self):
+        ua = "Mozilla/5.0 (compatible; Claude-User/1.0; +https://www.anthropic.com/)"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_facebook_external_hit_ua_is_bot(self):
+        ua = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_whatsapp_crawler_ua_is_bot(self):
+        ua = "WhatsApp/10.0.2.1"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_wordpress_checker_ua_is_bot(self):
+        ua = "WordPressChecker/1.0"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    # ---- 実ユーザー可能性のあるUAはブロックしない ----
+
+    def test_iphone_ios_17_5_safari_is_not_bot(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+
+    def test_mac_safari_17_2_is_not_bot(self):
+        ua = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 "
+            "Safari/605.1.15"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+
+    # ---- 45.148.10.0/24: 複数UAローテーションボット ----
+
+    def test_rotator_45_148_10_first_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.148.10.0"))
+
+    def test_rotator_45_148_10_middle_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.148.10.62"))
+
+    def test_rotator_45_148_10_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.148.10.255"))
+
+    def test_just_below_45_148_10_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("45.148.9.255"))
+
+    def test_just_above_45_148_10_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("45.148.11.0"))
+
+    # ---- 37.66.170.0/24: 複数UAローテーションボット ----
+
+    def test_rotator_37_66_170_first_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("37.66.170.0"))
+
+    def test_rotator_37_66_170_middle_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("37.66.170.56"))
+
+    def test_rotator_37_66_170_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("37.66.170.255"))
+
+    def test_just_below_37_66_170_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("37.66.169.255"))
+
+    def test_just_above_37_66_170_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("37.66.171.0"))
+
+    # ---- 150.109.119.0/24: Tencent Mobile Safari偽装ボットの別IP ----
+
+    def test_tencent_150_109_119_first_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("150.109.119.0"))
+
+    def test_tencent_150_109_119_middle_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("150.109.119.38"))
+
+    def test_tencent_150_109_119_last_addr_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("150.109.119.255"))
+
+    def test_just_below_150_109_119_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("150.109.118.255"))
+
+    def test_just_above_150_109_119_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("150.109.120.0"))
+
+    # ---- 組み合わせ：UA偽装 + 新規bot IP ----
+
+    def test_spoofed_ios_ua_from_150_109_119_is_bot(self):
+        spoofed_ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(spoofed_ua))
+        self.assertTrue(analytics._is_bot_ip("150.109.119.38"))
+
+    def test_spoofed_mac_chrome_from_45_148_10_is_bot(self):
+        spoofed_ua = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(spoofed_ua))
+        self.assertTrue(analytics._is_bot_ip("45.148.10.62"))
+
+
+class ResidualBotFilterSqlEquivalenceTests2026SepRound3(unittest.TestCase):
+    """2026-09-05追加(3)のUA/IPについてSQL/Python等価性テスト。"""
+
+    NEW_CASES = [
+        # AI/SNSクローラーUA
+        ("Mozilla/5.0 (compatible; Perplexity-User/1.0)", "1.2.3.4", "/", True),
+        ("Mozilla/5.0 (compatible; Claude-User/1.0)", "1.2.3.4", "/", True),
+        ("facebookexternalhit/1.1", "1.2.3.4", "/", True),
+        ("WhatsApp/10.0.2.1", "1.2.3.4", "/", True),
+        ("WordPressChecker/1.0", "1.2.3.4", "/", True),
+        # 実ユーザー可能性のあるUAはブロックしない
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1",
+            "126.0.0.1",
+            "/",
+            False,
+        ),
+        (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 "
+            "Safari/605.1.15",
+            "126.0.0.1",
+            "/",
+            False,
+        ),
+        # 新規/24 IPレンジ
+        ("Mozilla/5.0 normal browser", "45.148.10.62", "/", True),
+        ("Mozilla/5.0 normal browser", "45.148.10.255", "/", True),
+        ("Mozilla/5.0 normal browser", "45.148.9.255", "/", False),
+        ("Mozilla/5.0 normal browser", "45.148.11.0", "/", False),
+        ("Mozilla/5.0 normal browser", "37.66.170.56", "/", True),
+        ("Mozilla/5.0 normal browser", "37.66.170.255", "/", True),
+        ("Mozilla/5.0 normal browser", "37.66.169.255", "/", False),
+        ("Mozilla/5.0 normal browser", "37.66.171.0", "/", False),
+        ("Mozilla/5.0 normal browser", "150.109.119.38", "/", True),
+        ("Mozilla/5.0 normal browser", "150.109.119.255", "/", True),
+        ("Mozilla/5.0 normal browser", "150.109.118.255", "/", False),
+        ("Mozilla/5.0 normal browser", "150.109.120.0", "/", False),
+        # 組み合わせ
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3",
+            "150.109.119.38",
+            "/",
+            True,
+        ),
+    ]
+
+    def test_new_residual_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_CASES:
+            with self.subTest(ua=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+
+    def test_sql_ip_cidrs_include_new_residual_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in ("45.148.10.0/24", "37.66.170.0/24", "150.109.119.0/24"):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_round3(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（追加3レンジ後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
+
 if __name__ == "__main__":
     unittest.main()

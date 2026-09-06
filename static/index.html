@@ -31,6 +31,34 @@
   <meta name="twitter:description" content="YouTube Data API v3を活用した動画検索・分析ツール。キーワード検索、フィルタリング、トレンド分析機能を搭載。" />
   <meta name="twitter:image" content="https://vidscope.app/static/og-image.png?v=2" />
 
+  <script>
+  (function () {
+    if (new URLSearchParams(window.location.search).get('lang') !== 'en') return;
+    document.documentElement.setAttribute('lang', 'en');
+    document.title = 'VidScope | Free YouTube Video Search & Competitor Analysis Tool';
+    var desc = 'Research YouTube competitors without signing up or connecting your channel. Filter videos by language, region, duration, and views. Compare keywords with charts.';
+    function setMeta(selector, attr, value) {
+      var el = document.querySelector(selector);
+      if (el) el.setAttribute(attr, value);
+    }
+    setMeta('meta[name="description"]', 'content', desc);
+    setMeta('meta[property="og:title"]', 'content', document.title);
+    setMeta('meta[property="og:description"]', 'content', desc);
+    setMeta('meta[property="og:locale"]', 'content', 'en_US');
+    setMeta('meta[name="twitter:title"]', 'content', document.title);
+    setMeta('meta[name="twitter:description"]', 'content', desc);
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(function (s) {
+      try {
+        var json = JSON.parse(s.textContent);
+        if (json && json.description) {
+          json.description = 'Free YouTube video search and competitor analysis tool. Filter videos by language, region, duration, and views, and compare keywords with charts.';
+          s.textContent = JSON.stringify(json);
+        }
+      } catch (e) { /* noop */ }
+    });
+  })();
+  </script>
+
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png" />
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />

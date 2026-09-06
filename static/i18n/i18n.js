@@ -559,7 +559,7 @@
         },
       },
       app: {
-        docTitle: "YouTube Video Search & Analytics App | VidScope",
+        docTitle: "VidScope | Free YouTube Video Search & Competitor Analysis Tool",
         search: {
           placeholder: "Keyword",
           countSuffix: "results",
@@ -790,8 +790,8 @@
         navCta: "Open App →",
         heroBadge: "Powered by YouTube Data API v3",
         heroTitle: "Discover YouTube videos,<br>the <em>smarter</em> way!",
-        heroDesc: "VidScope is a next-generation YouTube search & analytics app that instantly finds the best videos using advanced filters for language, region, duration, and more.",
-        heroBtnPrimary: "🎬 Get Started Free",
+        heroDesc: "Find winning YouTube videos in seconds. Filter by language, region, duration, and view count—no channel login, no browser extension required.",
+        heroBtnPrimary: "🎬 Start Searching Free",
         heroBtnSecondary: "See Features",
         slide1: "🔍 Keyword Search → Results",
         slide2: "📊 Trend Analysis Charts",
@@ -898,7 +898,7 @@
         comparisonVidscopeSearch: "<span class='rating-symbol'>◎</span><br>Free-word + language & region filters",
         comparisonVidscopeRanking: "<span class='rating-symbol'>◎</span><br>Sort by views, rankings",
         comparisonVidscopeSeo: "<span class='rating-symbol'>△</span><br>Filtering for SEO improvement ideas",
-        comparisonVidscopeChannel: "<span class='rating-symbol'>×</span><br>Not required. Anonymous use with no API key",
+        comparisonVidscopeChannel: "<span class='rating-symbol'>×</span><br>No channel login required",
         comparisonVidscopeExtension: "<span class='rating-symbol'>×</span><br>None",
         comparisonVidscopeMobile: "<span class='rating-symbol'>○</span><br>Responsive web",
         comparisonVidscopeLang: "<span class='rating-symbol'>◎</span><br>ja/en/ko/zh",
@@ -2221,6 +2221,38 @@
     });
   }
 
+  function setMeta(selector, attr, value) {
+    var el = document.querySelector(selector);
+    if (el) el.setAttribute(attr, value);
+  }
+
+  function updateHeadMeta() {
+    if (currentLang !== "en") return;
+    var isAppPage = !!document.querySelector("[data-i18n-doctitle]");
+    var title = isAppPage
+      ? "VidScope | Free YouTube Video Search & Competitor Analysis Tool"
+      : "VidScope | Free YouTube Competitor Analysis Tool";
+    var desc = isAppPage
+      ? "Research YouTube competitors without signing up or connecting your channel. Filter videos by language, region, duration, and views. Compare keywords with charts."
+      : "Search, filter, and compare YouTube videos across languages and regions. No browser extension, no channel login required.";
+    document.title = title;
+    setMeta('meta[name="description"]', "content", desc);
+    setMeta('meta[property="og:title"]', "content", title);
+    setMeta('meta[property="og:description"]', "content", desc);
+    setMeta('meta[property="og:locale"]', "content", "en_US");
+    setMeta('meta[name="twitter:title"]', "content", title);
+    setMeta('meta[name="twitter:description"]', "content", desc);
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(function (s) {
+      try {
+        var json = JSON.parse(s.textContent);
+        if (json && json.description) {
+          json.description = desc;
+          s.textContent = JSON.stringify(json);
+        }
+      } catch (e) { /* noop */ }
+    });
+  }
+
   function setLanguage(lang) {
     if (SUPPORTED.indexOf(lang) === -1) return;
     currentLang = lang;
@@ -2228,6 +2260,7 @@
     document.documentElement.setAttribute("lang", lang);
     applyTranslations();
     updateLangUI();
+    updateHeadMeta();
     document.dispatchEvent(new CustomEvent("vidscope:langchange", { detail: { lang: lang } }));
   }
 
@@ -2268,6 +2301,7 @@
     document.documentElement.setAttribute("lang", currentLang);
     applyTranslations();
     updateLangUI();
+    updateHeadMeta();
     initLangSwitcher();
   }
 

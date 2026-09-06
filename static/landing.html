@@ -36,6 +36,33 @@
 <meta name="twitter:title" content="VidScope — 無料のYouTube動画検索＆チャンネル分析ツール" />
 <meta name="twitter:description" content="登録不要・APIキー不要。気になるキーワードの動画を再生回数順にランキング表示し、チャンネル詳細情報も瞬時に確認できる無料ツール。" />
 <meta name="twitter:image" content="https://vidscope.app/static/og-image.png?v=2" />
+<script>
+(function () {
+  if (new URLSearchParams(window.location.search).get('lang') !== 'en') return;
+  document.documentElement.setAttribute('lang', 'en');
+  document.title = 'VidScope | Free YouTube Competitor Analysis Tool';
+  var desc = 'Search, filter, and compare YouTube videos across languages and regions. No browser extension, no channel login required.';
+  function setMeta(selector, attr, value) {
+    var el = document.querySelector(selector);
+    if (el) el.setAttribute(attr, value);
+  }
+  setMeta('meta[name="description"]', 'content', desc);
+  setMeta('meta[property="og:title"]', 'content', document.title);
+  setMeta('meta[property="og:description"]', 'content', desc);
+  setMeta('meta[property="og:locale"]', 'content', 'en_US');
+  setMeta('meta[name="twitter:title"]', 'content', document.title);
+  setMeta('meta[name="twitter:description"]', 'content', desc);
+  document.querySelectorAll('script[type="application/ld+json"]').forEach(function (s) {
+    try {
+      var json = JSON.parse(s.textContent);
+      if (json && json.description) {
+        json.description = 'Free YouTube competitor analysis tool. Search, filter, and compare videos across languages and regions with no channel login required.';
+        s.textContent = JSON.stringify(json);
+      }
+    } catch (e) { /* noop */ }
+  });
+})();
+</script>
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico">

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Supabase SQL コピー用（②のみ）</title>
+<style>
+body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+h2 { color: #4ec9b0; }
+textarea { width: 100%; height: 180px; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555; padding: 12px; font-family: monospace; font-size: 13px; border-radius: 4px; }
+button { margin: 8px 0 24px; padding: 8px 20px; background: #0e7; color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+button:hover { background: #0fa; }
+</style>
+</head>
+<body>
+<h2>② get_daily_pageviews（ボット除外付き）</h2>
+<textarea id="sql2" readonly>create or replace function get_daily_pageviews(days_back integer, offset_days integer default 0)
+returns table(date text, count bigint) language sql stable as $daily$
+  select to_char("timestamp", 'YYYY-MM-DD'), count(*)::bigint
+  from page_views
+  where "timestamp" >= now() - ((days_back + offset_days) || ' days')::interval
+    and "timestamp" < now() - (offset_days || ' days')::interval
+    and not is_bot_page_view(user_agent, ip, path)
+  group by 1 order by 1;
+$daily$;</textarea>
+<button onclick="navigator.clipboard.writeText(document.getElementById('sql2').value)">② をコピー</button>
+</body>
+</html>

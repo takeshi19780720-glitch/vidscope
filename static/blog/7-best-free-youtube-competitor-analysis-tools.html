@@ -348,6 +348,39 @@ article a { color: #3ea6ff; }
 }
 .btn-secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
 
+/* Related articles */
+.related-section { margin-top: 56px; }
+.related-section h2 { margin: 0 0 20px !important; }
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+.related-card {
+  display: block;
+  background: var(--dark2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 22px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.related-card:hover { border-color: rgba(255,0,0,0.35); transform: translateY(-2px); }
+.related-card .related-tag {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  color: #ff6b6b; background: rgba(255,0,0,0.1);
+  border: 1px solid rgba(255,0,0,0.2); border-radius: 100px;
+  padding: 3px 10px; letter-spacing: 0.5px; margin-bottom: 10px;
+}
+.related-card h3 { font-size: 16px; font-weight: 700; color: var(--white); margin: 0 0 8px; }
+.related-card p { font-size: 14px; color: var(--gray); margin: 0; }
+.related-all {
+  display: inline-block; margin-top: 20px;
+  font-size: 14px; font-weight: 600; color: #3ea6ff; text-decoration: none;
+}
+.related-all:hover { text-decoration: underline; }
+
 footer {
   border-top: 1px solid rgba(255,255,255,0.06);
   padding: 40px 24px; text-align: center;
@@ -801,6 +834,27 @@ If you want to test a niche without signing up anywhere, here is a simple workfl
 
 <h3>What metrics matter most in YouTube competitor analysis?</h3>
 <p>Focus on recent video views, subscriber count, posting frequency, audience comments, and how long videos have been live. Recent performance is usually a better indicator of current opportunity than all-time channel size.</p>
+
+<div class="related-section">
+  <h2>Related articles</h2>
+  <div class="related-grid">
+    <a href="/blog/free-youtube-competitor-analysis-tools" class="related-card">
+      <span class="related-tag">日本語版</span>
+      <h3>無料で使えるYouTube競合分析ツール7選</h3>
+      <p>This guide is also available in Japanese. 日本語版はこちら。</p>
+    </a>
+    <a href="/blog/youtube-competitor-analysis-guide" class="related-card">
+      <span class="related-tag">競合分析</span>
+      <h3>YouTube競合分析のやり方｜後発チャンネルでも勝てる5ステップ</h3>
+      <p>Japanese guide on how to analyze competitors and find a winning angle.</p>
+    </a>
+    <a href="/blog" class="related-card">
+      <span class="related-tag">Blog</span>
+      <h3>VidScope Blog</h3>
+      <p>Browse all articles about YouTube research, niche selection, and monetization.</p>
+    </a>
+  </div>
+</div>
 
 <div class="cta-box">
   <h2>Start your competitor research without signing up</h2>

@@ -161,7 +161,7 @@ returns boolean language sql immutable as $$
     -- UAパターン一致（bot/spider/crawler等の部分一致 + Google系/SEOツール系/AI系クローラー個別列挙）
     (
       user_agent is not null and (
-        lower(user_agent) ~ '(bot|spider|crawler|curl|wget|go-http-client|python-requests|python-urllib|libwww-perl|scrapy|httpclient|java/|okhttp|postmanruntime|axios|node-fetch|masscan|nmap|nikto|sqlmap|zgrab)'
+        lower(user_agent) ~ '(bot|spider|crawler|curl|wget|go-http-client|python-requests|python-urllib|libwww-perl|scrapy|httpclient|java/|okhttp|postmanruntime|axios|node-fetch|masscan|nmap|nikto|sqlmap|zgrab|agency)'
         or lower(user_agent) like '%google-inspectiontool%'
         or lower(user_agent) like '%googleother%'
         or lower(user_agent) like '%google-extended%'
@@ -225,6 +225,25 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '45.148.10.0/24'
         or inet(ip) <<= inet '37.66.170.0/24'
         or inet(ip) <<= inet '150.109.119.0/24'
+        -- 2026-09-09追加: 直近アクセスログから検出された追加ボット/スキャナー群
+        -- Vultr Japan: 167.179.69.76 でPHP脆弱性スキャンを実施
+        or inet(ip) <<= inet '167.179.69.0/24'
+        -- Tencent Cloud: Mobile Safari 13.0.3 / iOS 13.2.3 を偽装したボット群
+        or inet(ip) <<= inet '82.156.0.0/15'
+        or inet(ip) <<= inet '119.45.0.0/16'
+        -- Google Cloud: root pathへ不自然なアクセス（Other/Other）
+        or inet(ip) <<= inet '34.26.102.0/24'
+        -- DigitalOcean: 137.184.227.0/24 (Chrome 131), 188.166.67.0/24 (Netherlands Other/Other)
+        or inet(ip) <<= inet '137.184.227.0/24'
+        or inet(ip) <<= inet '188.166.67.0/24'
+        -- Microsoft Azure: 20.172.36.0/24 (Chrome Mobile WebView 60 old)
+        or inet(ip) <<= inet '20.172.36.0/24'
+        -- Scaleway? France: 51.15.215.0/24 (duplicate Chrome hits)
+        or inet(ip) <<= inet '51.15.215.0/24'
+        -- US Other/Other
+        or inet(ip) <<= inet '66.132.186.0/24'
+        -- Hong Kong Other/Other
+        or inet(ip) <<= inet '199.45.155.0/24'
       )
     )
     or
@@ -249,6 +268,8 @@ returns boolean language sql immutable as $$
         -- バックアップ/ダンプファイル拡張子（サフィックス）
         or lower(path) like '%.bak' or lower(path) like '%.sql'
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
+        -- 2026-09-09追加: VidScopeにPHPエンドポイントはないため、.phpで終わる全パスをスキャンとみなす
+        or lower(path) like '%.php'
       )
     );
 $$;

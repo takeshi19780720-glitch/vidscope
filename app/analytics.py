@@ -111,7 +111,7 @@ _BOT_UA_PATTERNS = (
     "bot", "spider", "crawler", "curl", "wget", "go-http-client",
     "python-requests", "python-urllib", "libwww-perl", "scrapy",
     "httpclient", "java/", "okhttp", "postmanruntime", "axios",
-    "node-fetch", "masscan", "nmap", "nikto", "sqlmap", "zgrab",
+    "node-fetch", "masscan", "nmap", "nikto", "sqlmap", "zgrab", "agency",
     # --- Google系（'bot'を含まない/含んでいても明示しておきたいもの） ---
     "google-inspectiontool",   # Search Consoleのインデックス登録リクエスト・URL検査ツール
     "googleother",             # Google全般クロール（検索インデックス以外の用途）
@@ -153,7 +153,7 @@ _SCAN_PATH_PREFIXES = (
 
 # バックアップ/ダンプファイルを狙うスキャンでよく使われる拡張子（末尾一致）
 _SCAN_PATH_SUFFIXES = (
-    ".bak", ".sql", ".zip", ".tar.gz",
+    ".bak", ".sql", ".zip", ".tar.gz", ".php",
 )
 
 # ボット/クローラーが利用することが判明しているIPレンジ（CIDR）。
@@ -193,6 +193,25 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     ("37.66.170.0/24", "Cloud/hosting rotator bot (Chrome/Edge/Safari 2026-08-30)"),
     # 150.109.119.0/24: Tencent系ボットの別IP（Mobile Safari 13.0.3 / iOS 13.2.3を偽装）
     ("150.109.119.0/24", "Tencent Cloud spoofed Mobile Safari bot (2026-08-30)"),
+    # 2026-09-09追加: 直近アクセスログから検出された追加ボット/スキャナー群
+    # Vultr Japan: 167.179.69.76 でPHP脆弱性スキャンを実施
+    ("167.179.69.0/24", "Vultr Japan PHP scanner (2026-09-09)"),
+    # Tencent Cloud: Mobile Safari 13.0.3 / iOS 13.2.3 を偽装したボット群
+    ("82.156.0.0/15", "Tencent Cloud spoofed Mobile Safari bot (2026-09-09)"),
+    ("119.45.0.0/16", "Tencent Cloud spoofed Mobile Safari bot (2026-09-09)"),
+    # Google Cloud: root pathへ不自然なアクセス（Other/Other）
+    ("34.26.102.0/24", "Google Cloud scraper (Other/Other 2026-09-09)"),
+    # DigitalOcean: 137.184.227.0/24 (Chrome 131), 188.166.67.0/24 (Netherlands Other/Other)
+    ("137.184.227.0/24", "DigitalOcean scraper (Chrome 131 2026-09-09)"),
+    ("188.166.67.0/24", "DigitalOcean Netherlands scraper (Other/Other 2026-09-09)"),
+    # Microsoft Azure: 20.172.36.0/24 (Chrome Mobile WebView 60 old)
+    ("20.172.36.0/24", "Microsoft Azure scraper (old Chrome Mobile WebView 2026-09-09)"),
+    # Scaleway? France: 51.15.215.0/24 (duplicate Chrome hits)
+    ("51.15.215.0/24", "Scaleway? France scraper (duplicate Chrome 2026-09-09)"),
+    # US Other/Other
+    ("66.132.186.0/24", "US data-center scraper (Other/Other 2026-09-09)"),
+    # Hong Kong Other/Other
+    ("199.45.155.0/24", "Hong Kong data-center scraper (Other/Other 2026-09-09)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(

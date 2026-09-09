@@ -1068,5 +1068,305 @@ class ResidualBotFilterSqlEquivalenceTests2026SepRound3(unittest.TestCase):
         self.assertEqual(sql_cidrs, python_cidrs)
 
 
+class BotFilterTests2026Sep09(unittest.TestCase):
+    """2026-09-09追加フィルタのテスト（PHPスキャンパス / Agency UA / 新規IPレンジ）。"""
+
+    # ---- Agency UA ----
+
+    def test_agency_ua_is_bot(self):
+        ua = "Agency 93.8.2357"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_agency_ua_case_insensitive_is_bot(self):
+        ua = "Mozilla/5.0 (compatible; AGENCY/1.0)"
+        self.assertTrue(analytics._is_bot_user_agent(ua))
+
+    def test_regular_browser_without_agency_is_not_bot(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+
+    # ---- .php スキャンパス ----
+
+    def test_shell_php_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/shell.php"))
+
+    def test_admin_php_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/admin.php"))
+
+    def test_storage_index_php_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/storage/index.php"))
+
+    def test_php_case_insensitive_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/shell.PHP"))
+
+    def test_normal_path_containing_php_not_blocked(self):
+        # .php で終わらなければ誤検知しない
+        self.assertFalse(analytics._is_scan_path("/blog/php-tutorial"))
+
+    def test_normal_blog_path_not_blocked(self):
+        self.assertFalse(analytics._is_scan_path("/blog/youtube-cpm-rpm-calculation-guide"))
+
+    # ---- Vultr Japan 167.179.69.0/24 ----
+
+    def test_vultr_japan_scanner_ip_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("167.179.69.76"))
+
+    def test_vultr_japan_network_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("167.179.69.0"))
+
+    def test_vultr_japan_network_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("167.179.69.255"))
+
+    def test_just_below_vultr_japan_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("167.179.68.255"))
+
+    def test_just_above_vultr_japan_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("167.179.70.0"))
+
+    # ---- Tencent Cloud 82.156.0.0/15 ----
+
+    def test_tencent_82_156_spoofed_ip_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("82.156.88.97"))
+
+    def test_tencent_82_156_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("82.156.0.0"))
+
+    def test_tencent_82_157_last_is_bot(self):
+        # 82.156.0.0/15 = 82.156.0.0 〜 82.157.255.255
+        self.assertTrue(analytics._is_bot_ip("82.157.255.255"))
+
+    def test_just_below_tencent_82_156_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("82.155.255.255"))
+
+    def test_just_above_tencent_82_157_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("82.158.0.0"))
+
+    # ---- Tencent Cloud 119.45.0.0/16 ----
+
+    def test_tencent_119_45_spoofed_ip_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("119.45.7.86"))
+
+    def test_tencent_119_45_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("119.45.0.0"))
+
+    def test_tencent_119_45_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("119.45.255.255"))
+
+    def test_just_below_tencent_119_45_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("119.44.255.255"))
+
+    def test_just_above_tencent_119_45_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("119.46.0.0"))
+
+    # ---- Google Cloud 34.26.102.0/24 ----
+
+    def test_google_cloud_34_26_102_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.26.102.1"))
+
+    def test_google_cloud_34_26_102_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.26.102.255"))
+
+    def test_just_outside_google_cloud_34_26_102_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.26.103.0"))
+
+    # ---- DigitalOcean 137.184.227.0/24 ----
+
+    def test_digitalocean_137_184_227_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("137.184.227.1"))
+
+    def test_digitalocean_137_184_227_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("137.184.227.255"))
+
+    def test_just_outside_digitalocean_137_184_227_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("137.184.228.0"))
+
+    # ---- DigitalOcean Netherlands 188.166.67.0/24 ----
+
+    def test_digitalocean_188_166_67_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("188.166.67.1"))
+
+    def test_digitalocean_188_166_67_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("188.166.67.255"))
+
+    def test_just_outside_digitalocean_188_166_67_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("188.166.68.0"))
+
+    # ---- Microsoft Azure 20.172.36.0/24 ----
+
+    def test_azure_20_172_36_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("20.172.36.1"))
+
+    def test_azure_20_172_36_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("20.172.36.255"))
+
+    def test_just_outside_azure_20_172_36_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("20.172.37.0"))
+
+    # ---- Scaleway? France 51.15.215.0/24 ----
+
+    def test_scaleway_france_51_15_215_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("51.15.215.1"))
+
+    def test_scaleway_france_51_15_215_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("51.15.215.255"))
+
+    def test_just_outside_scaleway_france_51_15_215_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("51.15.216.0"))
+
+    # ---- US Other/Other 66.132.186.0/24 ----
+
+    def test_us_66_132_186_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("66.132.186.1"))
+
+    def test_us_66_132_186_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("66.132.186.255"))
+
+    def test_just_outside_us_66_132_186_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("66.132.187.0"))
+
+    # ---- Hong Kong Other/Other 199.45.155.0/24 ----
+
+    def test_hong_kong_199_45_155_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("199.45.155.1"))
+
+    def test_hong_kong_199_45_155_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("199.45.155.255"))
+
+    def test_just_outside_hong_kong_199_45_155_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("199.45.156.0"))
+
+    # ---- 組み合わせ：PHPスキャン + Vultr IP ----
+
+    def test_php_scan_from_vultr_japan_is_bot(self):
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+        self.assertTrue(analytics._is_scan_path("/ws83.php"))
+        self.assertTrue(analytics._is_bot_ip("167.179.69.76"))
+
+    # ---- 組み合わせ：Tencent偽装UA + 新規Tencent IP ----
+
+    def test_spoofed_mobile_safari_from_tencent_82_156_is_bot(self):
+        spoofed_ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(spoofed_ua))
+        self.assertTrue(analytics._is_bot_ip("82.156.88.97"))
+
+    def test_spoofed_mobile_safari_from_tencent_119_45_is_bot(self):
+        spoofed_ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(spoofed_ua))
+        self.assertTrue(analytics._is_bot_ip("119.45.7.86"))
+
+
+class BotFilterSqlEquivalenceTests2026Sep09(unittest.TestCase):
+    """2026-09-09追加パターンのSQL/Python等価性テスト。"""
+
+    NEW_CASES = [
+        # Agency UA
+        ("Agency 93.8.2357", "1.2.3.4", "/", True),
+        ("Mozilla/5.0 (compatible; AGENCY/1.0)", "1.2.3.4", "/", True),
+        # .php パス
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/shell.php", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/admin.php", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/storage/index.php", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/shell.PHP", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/blog/php-tutorial", False),
+        # 新規IPレンジ
+        ("Mozilla/5.0 normal browser", "167.179.69.76", "/", True),
+        ("Mozilla/5.0 normal browser", "167.179.69.0", "/", True),
+        ("Mozilla/5.0 normal browser", "167.179.69.255", "/", True),
+        ("Mozilla/5.0 normal browser", "167.179.68.255", "/", False),
+        ("Mozilla/5.0 normal browser", "167.179.70.0", "/", False),
+        ("Mozilla/5.0 normal browser", "82.156.88.97", "/", True),
+        ("Mozilla/5.0 normal browser", "82.156.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "82.157.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "82.155.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "82.158.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "119.45.7.86", "/", True),
+        ("Mozilla/5.0 normal browser", "119.45.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "119.45.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "119.44.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "119.46.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "34.26.102.1", "/", True),
+        ("Mozilla/5.0 normal browser", "34.26.102.255", "/", True),
+        ("Mozilla/5.0 normal browser", "34.26.103.0", "/", False),
+        ("Mozilla/5.0 normal browser", "137.184.227.1", "/", True),
+        ("Mozilla/5.0 normal browser", "137.184.227.255", "/", True),
+        ("Mozilla/5.0 normal browser", "137.184.228.0", "/", False),
+        ("Mozilla/5.0 normal browser", "188.166.67.1", "/", True),
+        ("Mozilla/5.0 normal browser", "188.166.67.255", "/", True),
+        ("Mozilla/5.0 normal browser", "188.166.68.0", "/", False),
+        ("Mozilla/5.0 normal browser", "20.172.36.1", "/", True),
+        ("Mozilla/5.0 normal browser", "20.172.36.255", "/", True),
+        ("Mozilla/5.0 normal browser", "20.172.37.0", "/", False),
+        ("Mozilla/5.0 normal browser", "51.15.215.1", "/", True),
+        ("Mozilla/5.0 normal browser", "51.15.215.255", "/", True),
+        ("Mozilla/5.0 normal browser", "51.15.216.0", "/", False),
+        ("Mozilla/5.0 normal browser", "66.132.186.1", "/", True),
+        ("Mozilla/5.0 normal browser", "66.132.186.255", "/", True),
+        ("Mozilla/5.0 normal browser", "66.132.187.0", "/", False),
+        ("Mozilla/5.0 normal browser", "199.45.155.1", "/", True),
+        ("Mozilla/5.0 normal browser", "199.45.155.255", "/", True),
+        ("Mozilla/5.0 normal browser", "199.45.156.0", "/", False),
+    ]
+
+    def test_new_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_CASES:
+            with self.subTest(ua=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+
+    def test_sql_scan_path_suffixes_include_php(self):
+        sql_raw = _sql_scan_path_suffixes()
+        sql_suffixes = {s.lstrip("%") for s in sql_raw}
+        self.assertIn(".php", sql_suffixes)
+
+    def test_sql_ip_cidrs_include_new_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in (
+            "167.179.69.0/24",
+            "82.156.0.0/15",
+            "119.45.0.0/16",
+            "34.26.102.0/24",
+            "137.184.227.0/24",
+            "188.166.67.0/24",
+            "20.172.36.0/24",
+            "51.15.215.0/24",
+            "66.132.186.0/24",
+            "199.45.155.0/24",
+        ):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_sep09(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（2026-09-09追加後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
+
 if __name__ == "__main__":
     unittest.main()

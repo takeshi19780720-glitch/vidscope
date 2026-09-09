@@ -151,6 +151,12 @@ _SCAN_PATH_PREFIXES = (
     "/backup", "/backups", "/dump",
 )
 
+# 上記プレフィックスだけでは捉えられないWordPress関連のスキャン指紋。
+# 例: //test/wp-includes/wlwmanifest.xml, //wordpress/wp-admin/admin-ajax.php
+_WORDPRESS_SCAN_PATHS = (
+    "/wp-admin/", "/wp-login.php", "/wp-content/", "/wp-includes/", "/wp-json/", "wlwmanifest.xml"
+)
+
 # バックアップ/ダンプファイルを狙うスキャンでよく使われる拡張子（末尾一致）
 _SCAN_PATH_SUFFIXES = (
     ".bak", ".sql", ".zip", ".tar.gz", ".php",
@@ -219,6 +225,31 @@ _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple
 )
 
 
+def _is_known_spoof_ua(user_agent: str, browser: str = "", os_name: str = "") -> bool:
+    """既知のUA/OS詐称パターン（Tencent Cloudボット等）を検出する。
+
+    UA文字列だけでなく、user_agents パーサーが出力する browser/os 値も使う。
+    例えば Tencent Cloud 上のボットは "Mobile Safari 13.0.3 / iOS 13.2.3" に
+    偽装していたため、IP判定だけでは該当IP帯外の漏れが発生する。
+    """
+    if not user_agent:
+        return False
+    ua_lower = user_agent.lower()
+    browser_lower = browser.lower() if browser else ""
+    os_lower = os_name.lower() if os_name else ""
+
+    is_mobile_safari_13_0_3 = (
+        "mobile safari 13.0.3" in browser_lower
+        or "safari/13.0.3" in ua_lower
+    )
+    is_ios_13_2_3 = (
+        "ios 13.2.3" in os_lower
+        or "ios 13.2.3" in ua_lower
+        or "13_2_3" in ua_lower
+    )
+    return is_mobile_safari_13_0_3 and is_ios_13_2_3
+
+
 def _is_bot_user_agent(user_agent: str) -> bool:
     """UAが既知のbot/スクリプト系パターンに一致するか判定する"""
     if not user_agent:
@@ -242,12 +273,32 @@ def _is_bot_ip(ip: str) -> bool:
     return any(addr in network for network in _BOT_NETWORKS)
 
 
+def _normalize_scan_path(path: str) -> str:
+    """スキャンパス判定用に先頭の連続スラッシュを1つに正規化する。
+
+    例: '//test/wp-includes/...' -> '/test/wp-includes/...'
+    """
+    if path.startswith("//"):
+        return path[1:]
+    return path
+
+
+def _is_wordpress_scan_path(path_lower: str) -> bool:
+    """任意のプレフィックス後に出現するWordPress関連のスキャン指紋を検出する。"""
+    return any(kw in path_lower for kw in _WORDPRESS_SCAN_PATHS)
+
+
 def _is_scan_path(path: str) -> bool:
     """脆弱性スキャンでよく狙われるパスかどうか判定する"""
-    path_lower = path.lower()
+    normalized = _normalize_scan_path(path)
+    path_lower = normalized.lower()
     if any(path_lower.startswith(prefix) for prefix in _SCAN_PATH_PREFIXES):
         return True
-    return any(path_lower.endswith(suffix) for suffix in _SCAN_PATH_SUFFIXES)
+    if any(path_lower.endswith(suffix) for suffix in _SCAN_PATH_SUFFIXES):
+        return True
+    # WordPress関連のスキャンパスは任意のプレフィックスの後に出現することがある
+    # 例: //test/wp-includes/wlwmanifest.xml, //wordpress/wp-admin/admin-ajax.php
+    return _is_wordpress_scan_path(path_lower)
 
 
 # リファラースパムの既知ドメイン。
@@ -314,6 +365,11 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
     ua = parse_ua(user_agent) if user_agent else None
     browser = f"{ua.browser.family} {ua.browser.version_string}" if ua else ""
     os_name = f"{ua.os.family} {ua.os.version_string}" if ua else ""
+
+    # 既知のUA/OS詐称パターンは記録しない
+    # 例: Tencent Cloud 上のボットが "Mobile Safari 13.0.3 / iOS 13.2.3" を偽装
+    if _is_known_spoof_ua(user_agent, browser, os_name):
+        return
 
     # 注意: _get_country() は外部GeoIP APIへのブロッキングHTTPリクエストを伴う。
     # log_page_view() 自体は非同期ミドルウェア(AnalyticsMiddleware)から同期的に

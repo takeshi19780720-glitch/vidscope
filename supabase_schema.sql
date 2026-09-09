@@ -218,6 +218,15 @@ returns boolean language sql immutable as $$
         or lower(user_agent) like '%facebookexternalhit%'
         or lower(user_agent) like '%whatsapp/%'
         or lower(user_agent) like '%wordpresschecker%'
+        -- 2026-09-09追加(4): 既知のUA/OS詐称パターン（_is_known_spoof_ua と対応）
+        or (
+          lower(user_agent) like '%safari/13.0.3%'
+          and (
+            lower(user_agent) like '%ios 13.2.3%'
+            or lower(user_agent) like '%iphone os 13_2_3%'
+            or lower(user_agent) like '%13_2_3%'
+          )
+        )
       )
     )
     or
@@ -290,6 +299,13 @@ returns boolean language sql immutable as $$
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
         -- 2026-09-09追加: VidScopeにPHPエンドポイントはないため、.phpで終わる全パスをスキャンとみなす
         or lower(path) like '%.php'
+        -- 2026-09-09追加(5): 先頭ダブルスラッシュ等でプレフィックス判定をすり抜けるWordPressスキャンを捕捉
+        or lower(path) like '%/wp-admin/%'
+        or lower(path) like '%/wp-login.php%'
+        or lower(path) like '%/wp-content/%'
+        or lower(path) like '%/wp-includes/%'
+        or lower(path) like '%/wp-json/%'
+        or lower(path) like '%wlwmanifest.xml%'
       )
     );
 $$;

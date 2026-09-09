@@ -54,8 +54,11 @@ def _sql_ua_regex_pattern() -> str:
 def _sql_ua_like_keywords() -> list[str]:
     """SQL内の lower(user_agent) like '%xxx%' のxxx部分を全て抽出する。"""
     body = _extract_is_bot_page_view_sql()
-    # UAブロックのみ（IPブロック開始より前）に限定する
-    ua_block_end = body.index("既知のbot/クローラーIPレンジ")
+    # UAブロックのみ（IPブロック開始より前、かつ既知のUA/OS詐称パターンより前）に限定する
+    ua_block_end = min(
+        body.index("既知のbot/クローラーIPレンジ"),
+        body.index("既知のUA/OS詐称パターン"),
+    )
     ua_block = body[:ua_block_end]
     return re.findall(r"lower\(user_agent\)\s+like\s+'%([^%']+)%'", ua_block)
 
@@ -113,6 +116,17 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
         except ValueError:
             ip_match = False
 
+    # 2026-09-09追加(4): Tencent Cloudが偽装する Mobile Safari 13.0.3 / iOS 13.2.3 パターン
+    spoof_match = False
+    if user_agent:
+        ua_lower = user_agent.lower()
+        if "safari/13.0.3" in ua_lower and (
+            "13_2_3" in ua_lower
+            or "ios 13.2.3" in ua_lower
+            or "iphone os 13_2_3" in ua_lower
+        ):
+            spoof_match = True
+
     path_match = False
     if path:
         path_lower = path.lower()
@@ -120,8 +134,13 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
             path_match = True
         elif any(path_lower.endswith(suffix.lstrip("%")) for suffix in scan_suffixes):
             path_match = True
+        elif any(kw in path_lower for kw in (
+            "/wp-admin/", "/wp-login.php", "/wp-content/",
+            "/wp-includes/", "/wp-json/", "wlwmanifest.xml"
+        )):
+            path_match = True
 
-    return ua_match or ip_match or path_match
+    return ua_match or ip_match or path_match or spoof_match
 
 
 class BotUserAgentTests(unittest.TestCase):
@@ -351,6 +370,7 @@ class SqlPythonEquivalenceTests(unittest.TestCase):
             with self.subTest(user_agent=user_agent, ip=ip, path=path):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -560,6 +580,7 @@ class NewPatternSqlEquivalenceTests(unittest.TestCase):
             with self.subTest(user_agent=user_agent, ip=ip, path=path):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -698,6 +719,7 @@ class ExtendedSqlEquivalenceTests2026Sep(unittest.TestCase):
             with self.subTest(ip=ip):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -837,6 +859,7 @@ class ResidualCloudScraperSqlEquivalenceTests2026Sep(unittest.TestCase):
             with self.subTest(ip=ip):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -1039,6 +1062,7 @@ class ResidualBotFilterSqlEquivalenceTests2026SepRound3(unittest.TestCase):
             with self.subTest(ua=user_agent, ip=ip, path=path):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -1323,6 +1347,7 @@ class BotFilterSqlEquivalenceTests2026Sep09(unittest.TestCase):
             with self.subTest(ua=user_agent, ip=ip, path=path):
                 python_result = (
                     analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
                     or analytics._is_bot_ip(ip or "")
                     or analytics._is_scan_path(path or "")
                 )
@@ -1472,6 +1497,141 @@ class LogSearchQueryBotFilterTests(unittest.TestCase):
         self.assertTrue(done.wait(timeout=1), "通常IPからの検索クエリが記録されなかった")
         self.assertTrue(captured.get("called"))
 
+
+class PostV5BotFilterTests(unittest.TestCase):
+    """v5 SQL適用後の生データから検出された追加ボットフィルタのテスト。"""
+
+    # ---- 先頭ダブルスラッシュのWordPressスキャン ----
+
+    def test_double_slash_wp_includes_wlwmanifest_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("//test/wp-includes/wlwmanifest.xml"))
+
+    def test_double_slash_wordpress_wp_includes_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("//wordpress/wp-includes/wlwmanifest.xml"))
+
+    def test_double_slash_wp_admin_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("//wordpress/wp-admin/admin-ajax.php"))
+
+    def test_double_slash_wp_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("//foo/wp-json/wp/v2/users"))
+
+    def test_double_slash_normal_blog_path_is_not_scan_path(self):
+        # 通常の記事パスは先頭ダブルスラッシュがあっても誤検知しない
+        self.assertFalse(analytics._is_scan_path("//blog/youtube-cpm-rpm-calculation-guide"))
+
+    def test_single_slash_wp_includes_wlwmanifest_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/wp-includes/wlwmanifest.xml"))
+
+    # ---- Mobile Safari 13.0.3 / iOS 13.2.3 詐称パターン ----
+
+    def test_known_spoof_ua_with_parsed_values_is_bot(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertTrue(analytics._is_known_spoof_ua(ua, "Mobile Safari 13.0.3", "iOS 13.2.3"))
+
+    def test_known_spoof_ua_from_raw_ua_only_is_bot(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertTrue(analytics._is_known_spoof_ua(ua))
+
+    def test_normal_ios_17_safari_is_not_spoof(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1"
+        )
+        self.assertFalse(analytics._is_known_spoof_ua(ua, "Mobile Safari 17.5", "iOS 17.5"))
+
+    def test_normal_mac_safari_is_not_spoof(self):
+        ua = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
+        )
+        self.assertFalse(analytics._is_known_spoof_ua(ua))
+
+    def test_spoof_ua_is_not_bot_user_agent(self):
+        """誤って通常のMobile Safariをブロックしないよう、詐称判定は独立ヘルパーで行う。"""
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        self.assertFalse(analytics._is_bot_user_agent(ua))
+
+    def test_spoof_ua_page_view_is_not_logged(self):
+        done = threading.Event()
+
+        def _task(_fn, *_args, **_kwargs):
+            done.set()
+
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3"
+        )
+        with mock.patch.object(analytics, "_submit_analytics_task", side_effect=_task):
+            analytics.log_page_view(
+                path="/blog/some-article",
+                ip="126.0.0.1",
+                user_agent=ua,
+                language="ja",
+                referer="",
+            )
+        self.assertFalse(done.is_set(), "既知の詐称UAからのページビューが記録された")
+
+
+class PostV5SqlEquivalenceTests(unittest.TestCase):
+    """v5 SQL適用後に追加したダブルスラッシュパス・詐称UAのSQL/Python等価性テスト。"""
+
+    POST_V5_CASES = [
+        # ダブルスラッシュWordPressスキャン
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "//test/wp-includes/wlwmanifest.xml", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "//wordpress/wp-includes/wlwmanifest.xml", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "//wordpress/wp-admin/admin-ajax.php", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "//foo/wp-json/wp/v2/users", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "//blog/youtube-cpm-rpm-calculation-guide", False),
+        # 詐称UA（IPは通常）
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/13.0.3",
+            "126.0.0.1",
+            "/",
+            True,
+        ),
+        # 通常UA
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1",
+            "126.0.0.1",
+            "/",
+            False,
+        ),
+    ]
+
+    def test_post_v5_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.POST_V5_CASES:
+            with self.subTest(ua=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
 
 if __name__ == "__main__":
     unittest.main()

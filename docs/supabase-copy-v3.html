@@ -2,40 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Supabase SQL — コピー用（v5: 2026-09-09 集計関数bot除外版）</title>
+<title>Supabase SQL — コピー用（v6: 2026-09-09 bot対策最終版）</title>
 <style>
 body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
 h2 { color: #4ec9b0; }
-h3 { color: #9cdcfe; }
-textarea { width: 100%; height: 320px; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555; padding: 12px; font-family: monospace; font-size: 13px; border-radius: 4px; }
+textarea { width: 100%; height: 520px; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555; padding: 12px; font-family: monospace; font-size: 13px; border-radius: 4px; }
 button { margin: 8px 0 24px; padding: 8px 20px; background: #0e7; color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
 button:hover { background: #0fa; }
-ul { line-height: 1.8; }
 </style>
 </head>
 <body>
-<h1>Supabase SQL コピー用（v5）</h1>
-<p>2026-09-09時点のbot判定・集計関数一式。ダッシュボードの「Top Pages / Top Searches / Top Countries / Top Referrers / Browsers / Recent / Unknown Country Ratio」でbot行を除外するために各集計関数に <code>not is_bot_page_view(user_agent, ip, path)</code> を追加した。</p>
-<ul>
-<li><a href="#combined">① まとめて適用（推奨）</a></li>
-<li><a href="#is_bot">② is_bot_page_view</a></li>
-<li><a href="#daily">③ get_daily_pageviews</a></li>
-<li><a href="#top_pages">④ get_top_pages</a></li>
-<li><a href="#top_searches">⑤ get_top_searches</a></li>
-<li><a href="#top_countries">⑥ get_top_countries</a></li>
-<li><a href="#top_referrers">⑦ get_top_referrers</a></li>
-<li><a href="#browsers">⑧ get_browser_os_stats</a></li>
-<li><a href="#recent">⑨ get_recent</a></li>
-<li><a href="#unknown">⑩ get_unknown_country_ratio</a></li>
-</ul>
-
-<h2 id="combined">① まとめて適用（全関数再作成）</h2>
-<textarea id="sql-combined" readonly>-- ============================================
--- v5: 2026-09-09 集計関数bot除外版（まとめて適用用）
--- ============================================
-
--- ボット判定関数
- create or replace function is_bot_page_view(user_agent text, ip text, path text)
+<h2>① is_bot_page_view（v6: ダブルスラッシュWordPressスキャン + Mobile Safari 13.0.3/iOS 13.2.3 偽装判定追加）</h2>
+<textarea id="sql1" readonly>create or replace function is_bot_page_view(user_agent text, ip text, path text)
 returns boolean language sql immutable as $$
   select
     (
@@ -76,6 +54,15 @@ returns boolean language sql immutable as $$
         or lower(user_agent) like '%facebookexternalhit%'
         or lower(user_agent) like '%whatsapp/%'
         or lower(user_agent) like '%wordpresschecker%'
+        -- 2026-09-09追加(4): 既知のUA/OS詐称パターン
+        or (
+          lower(user_agent) like '%safari/13.0.3%'
+          and (
+            lower(user_agent) like '%ios 13.2.3%'
+            or lower(user_agent) like '%iphone os 13_2_3%'
+            or lower(user_agent) like '%13_2_3%'
+          )
+        )
       )
     )
     or
@@ -98,7 +85,7 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '45.148.10.0/24'
         or inet(ip) <<= inet '37.66.170.0/24'
         or inet(ip) <<= inet '150.109.119.0/24'
-        -- 2026-09-09追加
+        -- 2026-09-09追加: 直近アクセスログから検出された追加ボット/スキャナー群
         or inet(ip) <<= inet '167.179.69.0/24'
         or inet(ip) <<= inet '82.156.0.0/15'
         or inet(ip) <<= inet '119.45.0.0/16'
@@ -131,338 +118,16 @@ returns boolean language sql immutable as $$
         or lower(path) like '%.bak' or lower(path) like '%.sql'
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
         or lower(path) like '%.php'
-      )
-    );
-$$;
-
--- 日別PV（bot除外済み）
-create or replace function get_daily_pageviews(days_back integer, offset_days integer default 0)
-returns table(date text, count bigint) language sql stable as $$
-  select to_char("timestamp", 'YYYY-MM-DD'), count(*)::bigint
-  from page_views
-  where "timestamp" >= now() - ((days_back + offset_days) || ' days')::interval
-    and "timestamp" < now() - (offset_days || ' days')::interval
-    and not is_bot_page_view(user_agent, ip, path)
-  group by 1 order by 1;
-$$;
-
--- 人気ページTOP（bot除外）
-create or replace function get_top_pages(limit_count integer)
-returns table(path text, count bigint) language sql stable as $$
-  select path, count(*)::bigint from page_views
-  where not is_bot_page_view(user_agent, ip, path)
-  group by path order by count(*) desc limit limit_count;
-$$;
-
--- 検索キーワードTOP（bot IP除外）
-create or replace function get_top_searches(limit_count integer)
-returns table(query text, count bigint) language sql stable as $$
-  select query, count(*)::bigint from search_queries
-  where query is not null and query != ''
-    and (ip is null or not is_bot_page_view(null, ip, null))
-  group by query order by count(*) desc limit limit_count;
-$$;
-
--- アクセス元国TOP（bot除外）
-create or replace function get_top_countries(limit_count integer)
-returns table(country text, count bigint) language sql stable as $$
-  select country, count(*)::bigint from page_views
-  where country is not null and country != ''
-    and not is_bot_page_view(user_agent, ip, path)
-  group by country order by count(*) desc limit limit_count;
-$$;
-
--- 流入元ドメインTOP（bot除外）
-create or replace function get_top_referrers(limit_count integer, days_back integer default null)
-returns table(domain text, count bigint) language sql stable as $$
-  select
-    case
-      when referer is null or referer = '' then 'Direct / (none)'
-      else regexp_replace(
-        regexp_replace(referer, '^https?://', '', 'i'),
-        '^(www\.)?([^/]+).*$', '\2'
-      )
-    end as domain,
-    count(*)::bigint
-  from page_views
-  where (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
-    and not is_bot_page_view(user_agent, ip, path)
-  group by 1
-  order by count(*) desc
-  limit limit_count;
-$$;
-
--- ブラウザ・OS分布（bot除外）
-create or replace function get_browser_os_stats()
-returns json language sql stable as $$
-  select json_build_object(
-    'browsers', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
-      (select browser as name, count(*)::bigint as count from page_views
-       where browser is not null and browser != ''
-         and not is_bot_page_view(user_agent, ip, path)
-       group by browser order by count(*) desc limit 10) t),
-    'os', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
-      (select os as name, count(*)::bigint as count from page_views
-       where os is not null and os != ''
-         and not is_bot_page_view(user_agent, ip, path)
-       group by os order by count(*) desc limit 10) t)
-  );
-$$;
-
--- 直近アクセスログ（bot除外、include_bots=trueで元の挙動も可能）
-create or replace function get_recent(limit_count integer, include_bots boolean default false)
-returns table("timestamp" timestamptz, path text, ip text, browser text, os text, country text, referer text) language sql stable as $$
-  select "timestamp", path, ip, browser, os, country, referer
-  from page_views
-  where include_bots or not is_bot_page_view(user_agent, ip, path)
-  order by id desc
-  limit limit_count;
-$$;
-
--- Unknown国名比率（bot除外）
-create or replace function get_unknown_country_ratio(days_back integer default null)
-returns json language sql stable as $$
-  select json_build_object(
-    'days_back', days_back,
-    'total', (select count(*) from page_views
-              where not is_bot_page_view(user_agent, ip, path)
-                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
-    'unknown_or_null', (select count(*) from page_views
-              where not is_bot_page_view(user_agent, ip, path)
-                and (country is null or country = '' or country = 'Unknown')
-                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
-    'unknown_ratio_pct', (
-      select case when count(*) = 0 then 0
-        else round(
-          100.0 * count(*) filter (where country is null or country = '' or country = 'Unknown')
-          / count(*), 1)
-      end
-      from page_views
-      where not is_bot_page_view(user_agent, ip, path)
-        and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
-    )
-  );
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-combined').value)">① まとめてコピー</button>
-
-<h2 id="is_bot">② is_bot_page_view（v5）</h2>
-<textarea id="sql-is-bot" readonly>create or replace function is_bot_page_view(user_agent text, ip text, path text)
-returns boolean language sql immutable as $$
-  select
-    (
-      user_agent is not null and (
-        lower(user_agent) ~ '(bot|spider|crawler|curl|wget|go-http-client|python-requests|python-urllib|libwww-perl|scrapy|httpclient|java/|okhttp|postmanruntime|axios|node-fetch|masscan|nmap|nikto|sqlmap|zgrab|agency)'
-        or lower(user_agent) like '%google-inspectiontool%'
-        or lower(user_agent) like '%googleother%'
-        or lower(user_agent) like '%google-extended%'
-        or lower(user_agent) like '%feedfetcher-google%'
-        or lower(user_agent) like '%google favicon%'
-        or lower(user_agent) like '%apis-google%'
-        or lower(user_agent) like '%storebot-google%'
-        or lower(user_agent) like '%google-cloudvertexbot%'
-        or lower(user_agent) like '%mediapartners-google%'
-        or lower(user_agent) like '%adsbot-google%'
-        or lower(user_agent) like '%ahrefsbot%'
-        or lower(user_agent) like '%semrushbot%'
-        or lower(user_agent) like '%dotbot%'
-        or lower(user_agent) like '%mj12bot%'
-        or lower(user_agent) like '%rogerbot%'
-        or lower(user_agent) like '%blexbot%'
-        or lower(user_agent) like '%seznambot%'
-        or lower(user_agent) like '%petalbot%'
-        or lower(user_agent) like '%bytespider%'
-        or lower(user_agent) like '%gptbot%'
-        or lower(user_agent) like '%chatgpt-user%'
-        or lower(user_agent) like '%claudebot%'
-        or lower(user_agent) like '%ccbot%'
-        or lower(user_agent) like '%amazonbot%'
-        or lower(user_agent) like '%meta-externalagent%'
-        or lower(user_agent) like '%meta-externalfetcher%'
-        or lower(user_agent) like '%yandexbot%'
-        or lower(user_agent) like '%applebot%'
-        or lower(user_agent) like '%bingpreview%'
-        or lower(user_agent) like '%headlesschrom%'
-        or lower(user_agent) like '%perplexity-user%'
-        or lower(user_agent) like '%claude-user%'
-        or lower(user_agent) like '%facebookexternalhit%'
-        or lower(user_agent) like '%whatsapp/%'
-        or lower(user_agent) like '%wordpresschecker%'
-      )
-    )
-    or
-    (
-      ip is not null and ip != '' and ip ~ '^[0-9.]+$' and (
-        inet(ip) <<= inet '43.128.0.0/10'
-        or inet(ip) <<= inet '1.12.0.0/14'
-        or inet(ip) <<= inet '118.24.0.0/16'
-        or inet(ip) <<= inet '101.32.0.0/15'
-        or inet(ip) <<= inet '66.249.64.0/19'
-        or inet(ip) <<= inet '167.71.6.0/24'
-        or inet(ip) <<= inet '3.151.194.0/24'
-        or inet(ip) <<= inet '54.77.166.0/24'
-        or inet(ip) <<= inet '35.254.67.0/24'
-        or inet(ip) <<= inet '35.185.159.0/24'
-        or inet(ip) <<= inet '34.78.15.0/24'
-        or inet(ip) <<= inet '20.104.81.0/24'
-        or inet(ip) <<= inet '170.64.159.0/24'
-        or inet(ip) <<= inet '158.69.55.0/24'
-        or inet(ip) <<= inet '45.148.10.0/24'
-        or inet(ip) <<= inet '37.66.170.0/24'
-        or inet(ip) <<= inet '150.109.119.0/24'
-        -- 2026-09-09追加
-        or inet(ip) <<= inet '167.179.69.0/24'
-        or inet(ip) <<= inet '82.156.0.0/15'
-        or inet(ip) <<= inet '119.45.0.0/16'
-        or inet(ip) <<= inet '34.26.102.0/24'
-        or inet(ip) <<= inet '137.184.227.0/24'
-        or inet(ip) <<= inet '188.166.67.0/24'
-        or inet(ip) <<= inet '20.172.36.0/24'
-        or inet(ip) <<= inet '51.15.215.0/24'
-        or inet(ip) <<= inet '66.132.186.0/24'
-        or inet(ip) <<= inet '199.45.155.0/24'
-      )
-    )
-    or
-    (
-      path is not null and (
-        lower(path) like '/wp-admin%' or lower(path) like '/wp-login.php%'
-        or lower(path) like '/wp-content%' or lower(path) like '/wp-includes%'
-        or lower(path) like '/wp-json%' or lower(path) like '/xmlrpc.php%'
-        or lower(path) like '/.env%' or lower(path) like '/.git%'
-        or lower(path) like '/phpmyadmin%' or lower(path) like '/pma%'
-        or lower(path) like '/vendor/%' or lower(path) like '/.aws%'
-        or lower(path) like '/.ssh%' or lower(path) like '/config.json%'
-        or lower(path) like '/actuator%' or lower(path) like '/cgi-bin%'
-        or lower(path) like '/.docker%' or lower(path) like '/.vscode%'
-        or lower(path) like '/.idea%' or lower(path) like '/server-status%'
-        or lower(path) like '/telescope%' or lower(path) like '/_profiler%'
-        or lower(path) like '/debug/default/view%' or lower(path) like '/geoserver%'
-        or lower(path) like '/backup%' or lower(path) like '/backups%'
-        or lower(path) like '/dump%'
-        or lower(path) like '%.bak' or lower(path) like '%.sql'
-        or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
-        or lower(path) like '%.php'
+        -- 2026-09-09追加(5): 先頭ダブルスラッシュ等でプレフィックス判定をすり抜けるWordPressスキャンを捕捉
+        or lower(path) like '%/wp-admin/%'
+        or lower(path) like '%/wp-login.php%'
+        or lower(path) like '%/wp-content/%'
+        or lower(path) like '%/wp-includes/%'
+        or lower(path) like '%/wp-json/%'
+        or lower(path) like '%wlwmanifest.xml%'
       )
     );
 $$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-is-bot').value)">② をコピー</button>
-
-<h2 id="daily">③ get_daily_pageviews（変更なし）</h2>
-<textarea id="sql-daily" readonly>create or replace function get_daily_pageviews(days_back integer, offset_days integer default 0)
-returns table(date text, count bigint) language sql stable as $$
-  select to_char("timestamp", 'YYYY-MM-DD'), count(*)::bigint
-  from page_views
-  where "timestamp" >= now() - ((days_back + offset_days) || ' days')::interval
-    and "timestamp" < now() - (offset_days || ' days')::interval
-    and not is_bot_page_view(user_agent, ip, path)
-  group by 1 order by 1;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-daily').value)">③ をコピー</button>
-
-<h2 id="top_pages">④ get_top_pages（bot除外追加）</h2>
-<textarea id="sql-top-pages" readonly>create or replace function get_top_pages(limit_count integer)
-returns table(path text, count bigint) language sql stable as $$
-  select path, count(*)::bigint from page_views
-  where not is_bot_page_view(user_agent, ip, path)
-  group by path order by count(*) desc limit limit_count;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-top-pages').value)">④ をコピー</button>
-
-<h2 id="top_searches">⑤ get_top_searches（bot IP除外追加）</h2>
-<textarea id="sql-top-searches" readonly>create or replace function get_top_searches(limit_count integer)
-returns table(query text, count bigint) language sql stable as $$
-  select query, count(*)::bigint from search_queries
-  where query is not null and query != ''
-    and (ip is null or not is_bot_page_view(null, ip, null))
-  group by query order by count(*) desc limit limit_count;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-top-searches').value)">⑤ をコピー</button>
-
-<h2 id="top_countries">⑥ get_top_countries（bot除外追加）</h2>
-<textarea id="sql-top-countries" readonly>create or replace function get_top_countries(limit_count integer)
-returns table(country text, count bigint) language sql stable as $$
-  select country, count(*)::bigint from page_views
-  where country is not null and country != ''
-    and not is_bot_page_view(user_agent, ip, path)
-  group by country order by count(*) desc limit limit_count;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-top-countries').value)">⑥ をコピー</button>
-
-<h2 id="top_referrers">⑦ get_top_referrers（bot除外追加）</h2>
-<textarea id="sql-top-referrers" readonly>create or replace function get_top_referrers(limit_count integer, days_back integer default null)
-returns table(domain text, count bigint) language sql stable as $$
-  select
-    case
-      when referer is null or referer = '' then 'Direct / (none)'
-      else regexp_replace(
-        regexp_replace(referer, '^https?://', '', 'i'),
-        '^(www\.)?([^/]+).*$', '\2'
-      )
-    end as domain,
-    count(*)::bigint
-  from page_views
-  where (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
-    and not is_bot_page_view(user_agent, ip, path)
-  group by 1
-  order by count(*) desc
-  limit limit_count;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-top-referrers').value)">⑦ をコピー</button>
-
-<h2 id="browsers">⑧ get_browser_os_stats（bot除外追加）</h2>
-<textarea id="sql-browsers" readonly>create or replace function get_browser_os_stats()
-returns json language sql stable as $$
-  select json_build_object(
-    'browsers', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
-      (select browser as name, count(*)::bigint as count from page_views
-       where browser is not null and browser != ''
-         and not is_bot_page_view(user_agent, ip, path)
-       group by browser order by count(*) desc limit 10) t),
-    'os', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
-      (select os as name, count(*)::bigint as count from page_views
-       where os is not null and os != ''
-         and not is_bot_page_view(user_agent, ip, path)
-       group by os order by count(*) desc limit 10) t)
-  );
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-browsers').value)">⑧ をコピー</button>
-
-<h2 id="recent">⑨ get_recent（新規：bot除外、include_botsオプション付き）</h2>
-<textarea id="sql-recent" readonly>create or replace function get_recent(limit_count integer, include_bots boolean default false)
-returns table("timestamp" timestamptz, path text, ip text, browser text, os text, country text, referer text) language sql stable as $$
-  select "timestamp", path, ip, browser, os, country, referer
-  from page_views
-  where include_bots or not is_bot_page_view(user_agent, ip, path)
-  order by id desc
-  limit limit_count;
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-recent').value)">⑨ をコピー</button>
-
-<h2 id="unknown">⑩ get_unknown_country_ratio（bot除外追加）</h2>
-<textarea id="sql-unknown" readonly>create or replace function get_unknown_country_ratio(days_back integer default null)
-returns json language sql stable as $$
-  select json_build_object(
-    'days_back', days_back,
-    'total', (select count(*) from page_views
-              where not is_bot_page_view(user_agent, ip, path)
-                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
-    'unknown_or_null', (select count(*) from page_views
-              where not is_bot_page_view(user_agent, ip, path)
-                and (country is null or country = '' or country = 'Unknown')
-                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
-    'unknown_ratio_pct', (
-      select case when count(*) = 0 then 0
-        else round(
-          100.0 * count(*) filter (where country is null or country = '' or country = 'Unknown')
-          / count(*), 1)
-      end
-      from page_views
-      where not is_bot_page_view(user_agent, ip, path)
-        and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
-    )
-  );
-$$;</textarea>
-<button onclick="navigator.clipboard.writeText(document.getElementById('sql-unknown').value)">⑩ をコピー</button>
-
+<button onclick="navigator.clipboard.writeText(document.getElementById('sql1').value)">① をコピー</button>
 </body>
 </html>

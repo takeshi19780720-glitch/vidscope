@@ -2,23 +2,23 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Supabase SQL — コピー用（v3最新）</title>
+<title>Supabase SQL — コピー用（v4: 2026-09-09 bot対策強化版）</title>
 <style>
 body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
 h2 { color: #4ec9b0; }
-textarea { width: 100%; height: 340px; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555; padding: 12px; font-family: monospace; font-size: 13px; border-radius: 4px; }
+textarea { width: 100%; height: 420px; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555; padding: 12px; font-family: monospace; font-size: 13px; border-radius: 4px; }
 button { margin: 8px 0 24px; padding: 8px 20px; background: #0e7; color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
 button:hover { background: #0fa; }
 </style>
 </head>
 <body>
-<h2>① is_bot_page_view（v3: Perplexity/Claude/Facebook/WhatsApp/WordPressChecker + 3 IPレンジ追加）</h2>
+<h2>① is_bot_page_view（v4: PHPスキャン + Tencent/クラウドIP追加 + agency UA）</h2>
 <textarea id="sql1" readonly>create or replace function is_bot_page_view(user_agent text, ip text, path text)
 returns boolean language sql immutable as $$
   select
     (
       user_agent is not null and (
-        lower(user_agent) ~ '(bot|spider|crawler|curl|wget|go-http-client|python-requests|python-urllib|libwww-perl|scrapy|httpclient|java/|okhttp|postmanruntime|axios|node-fetch|masscan|nmap|nikto|sqlmap|zgrab)'
+        lower(user_agent) ~ '(bot|spider|crawler|curl|wget|go-http-client|python-requests|python-urllib|libwww-perl|scrapy|httpclient|java/|okhttp|postmanruntime|axios|node-fetch|masscan|nmap|nikto|sqlmap|zgrab|agency)'
         or lower(user_agent) like '%google-inspectiontool%'
         or lower(user_agent) like '%googleother%'
         or lower(user_agent) like '%google-extended%'
@@ -76,6 +76,17 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '45.148.10.0/24'
         or inet(ip) <<= inet '37.66.170.0/24'
         or inet(ip) <<= inet '150.109.119.0/24'
+        -- 2026-09-09追加: 直近アクセスログから検出された追加ボット/スキャナー群
+        or inet(ip) <<= inet '167.179.69.0/24'
+        or inet(ip) <<= inet '82.156.0.0/15'
+        or inet(ip) <<= inet '119.45.0.0/16'
+        or inet(ip) <<= inet '34.26.102.0/24'
+        or inet(ip) <<= inet '137.184.227.0/24'
+        or inet(ip) <<= inet '188.166.67.0/24'
+        or inet(ip) <<= inet '20.172.36.0/24'
+        or inet(ip) <<= inet '51.15.215.0/24'
+        or inet(ip) <<= inet '66.132.186.0/24'
+        or inet(ip) <<= inet '199.45.155.0/24'
       )
     )
     or
@@ -97,6 +108,7 @@ returns boolean language sql immutable as $$
         or lower(path) like '/dump%'
         or lower(path) like '%.bak' or lower(path) like '%.sql'
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
+        or lower(path) like '%.php'
       )
     );
 $$;</textarea>

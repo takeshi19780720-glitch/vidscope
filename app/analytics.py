@@ -356,6 +356,10 @@ def log_page_view(path: str, ip: str, user_agent: str, language: str, referer: s
 def log_search_query(query: str, max_results: int, duration_filter: str,
                      published_after: str, category_id: str, language: str, region: str, ip: str):
     """検索クエリを記録（バックグラウンドexecutorでSupabaseへ送信）"""
+    # 既知のbot/クローラーIPレンジからの検索は記録しない（search_queriesにはuser_agent/pathがないためIP判定のみ）
+    if _is_bot_ip(ip):
+        return
+
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "query": query,
@@ -617,14 +621,9 @@ def get_browsers() -> dict:
 
 
 def get_recent(limit: int = 50) -> list[dict]:
-    """直近のアクセスログ"""
-    rows = sb.select(
-        "page_views",
-        select="timestamp,path,ip,browser,os,country,referer",
-        order="id.desc",
-        limit=limit,
-    )
-    return rows
+    """直近のアクセスログ（botを除外）"""
+    result = sb.rpc("get_recent", {"limit_count": limit, "include_bots": False})
+    return result or []
 
 
 def cleanup_old_data(days: int = 90):

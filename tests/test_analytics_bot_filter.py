@@ -1368,5 +1368,110 @@ class BotFilterSqlEquivalenceTests2026Sep09(unittest.TestCase):
         self.assertEqual(sql_cidrs, python_cidrs)
 
 
+class SqlAggregationBotFilterTests(unittest.TestCase):
+    """ダッシュボード集計RPC関数がbot行を除外するようSQL側で定義されていることの確認。
+
+    ローカルにPostgreSQL/Supabase接続がないため、SQLファイルの文字列を検査する
+    ユニットテストとして実装する。各関数本体にbot除外のwhere句が含まれていることを
+    検証する。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = SCHEMA_SQL_PATH.read_text(encoding="utf-8")
+
+    def _extract_function_body(self, fn_name: str) -> str:
+        """create or replace function fn_name(...) returns ... as $$...$$; の全体（シグネチャ含む）を抽出する。"""
+        pattern = (
+            r"(create or replace function\s+" + re.escape(fn_name) +
+            r"\([^)]*\)\s*"
+            r"returns[\s\S]*?as\s*\$\$(.*?)\$\$;)"
+        )
+        match = re.search(pattern, self.schema, re.DOTALL | re.IGNORECASE)
+        if not match:
+            raise AssertionError(f"{fn_name}() が {SCHEMA_SQL_PATH} に見つからない")
+        return match.group(1)
+
+    def test_get_top_pages_excludes_bots(self):
+        body = self._extract_function_body("get_top_pages")
+        self.assertIn("not is_bot_page_view(user_agent, ip, path)", body)
+
+    def test_get_top_countries_excludes_bots(self):
+        body = self._extract_function_body("get_top_countries")
+        self.assertIn("not is_bot_page_view(user_agent, ip, path)", body)
+
+    def test_get_top_referrers_excludes_bots(self):
+        body = self._extract_function_body("get_top_referrers")
+        self.assertIn("not is_bot_page_view(user_agent, ip, path)", body)
+        # 既存のdays_backフィルタも維持されていること
+        self.assertIn("days_back is null", body)
+
+    def test_get_top_searches_excludes_bot_ips(self):
+        body = self._extract_function_body("get_top_searches")
+        self.assertIn("ip is null or not is_bot_page_view(null, ip, null)", body)
+
+    def test_get_browser_os_stats_excludes_bots_for_browsers(self):
+        body = self._extract_function_body("get_browser_os_stats")
+        self.assertIn("not is_bot_page_view(user_agent, ip, path)", body)
+        # browsers / os 両方のサブクエリに含まれるはず
+        self.assertEqual(body.count("not is_bot_page_view(user_agent, ip, path)"), 2)
+
+    def test_get_unknown_country_ratio_excludes_bots(self):
+        body = self._extract_function_body("get_unknown_country_ratio")
+        self.assertIn("not is_bot_page_view(user_agent, ip, path)", body)
+
+    def test_get_recent_has_include_bots_default_false_and_excludes_bots(self):
+        body = self._extract_function_body("get_recent")
+        # include_bots パラメータがありデフォルト false
+        self.assertIn("include_bots boolean default false", body)
+        # false 時にbotを除外
+        self.assertIn("include_bots or not is_bot_page_view(user_agent, ip, path)", body)
+
+
+class LogSearchQueryBotFilterTests(unittest.TestCase):
+    """app/analytics.log_search_query() がbot IPからの検索を記録しないことの確認。"""
+
+    def test_bot_ip_search_is_not_logged(self):
+        done = threading.Event()
+
+        def _task():
+            done.set()
+
+        with mock.patch.object(analytics, "_submit_analytics_task", side_effect=_task):
+            analytics.log_search_query(
+                query="test",
+                max_results=10,
+                duration_filter="",
+                published_after="",
+                category_id="",
+                language="ja",
+                region="JP",
+                ip="43.135.20.5",  # Tencent Cloud bot IP
+            )
+        self.assertFalse(done.is_set(), "bot IPからの検索クエリが記録された")
+
+    def test_normal_ip_search_is_logged(self):
+        done = threading.Event()
+        captured = {}
+
+        def _task(fn, *args):
+            captured["called"] = True
+            done.set()
+
+        with mock.patch.object(analytics, "_submit_analytics_task", side_effect=_task):
+            analytics.log_search_query(
+                query="test",
+                max_results=10,
+                duration_filter="",
+                published_after="",
+                category_id="",
+                language="ja",
+                region="JP",
+                ip="126.0.0.1",  # 典型的な日本ISP IP
+            )
+        self.assertTrue(done.wait(timeout=1), "通常IPからの検索クエリが記録されなかった")
+        self.assertTrue(captured.get("called"))
+
+
 if __name__ == "__main__":
     unittest.main()

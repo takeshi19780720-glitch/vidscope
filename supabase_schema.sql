@@ -89,19 +89,25 @@ $$;
 
 create or replace function get_top_pages(limit_count integer)
 returns table(path text, count bigint) language sql stable as $$
-  select path, count(*)::bigint from page_views group by path order by count(*) desc limit limit_count;
+  select path, count(*)::bigint from page_views
+  where not is_bot_page_view(user_agent, ip, path)
+  group by path order by count(*) desc limit limit_count;
 $$;
 
 create or replace function get_top_searches(limit_count integer)
 returns table(query text, count bigint) language sql stable as $$
   select query, count(*)::bigint from search_queries
-  where query is not null and query != '' group by query order by count(*) desc limit limit_count;
+  where query is not null and query != ''
+    and (ip is null or not is_bot_page_view(null, ip, null))
+  group by query order by count(*) desc limit limit_count;
 $$;
 
 create or replace function get_top_countries(limit_count integer)
 returns table(country text, count bigint) language sql stable as $$
   select country, count(*)::bigint from page_views
-  where country is not null and country != '' group by country order by count(*) desc limit limit_count;
+  where country is not null and country != ''
+    and not is_bot_page_view(user_agent, ip, path)
+  group by country order by count(*) desc limit limit_count;
 $$;
 
 -- refererのURLからドメイン単位で集計する（例: https://www.reddit.com/r/microsaas/... -> reddit.com）。
@@ -119,6 +125,7 @@ returns table(domain text, count bigint) language sql stable as $$
     count(*)::bigint
   from page_views
   where (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
+    and not is_bot_page_view(user_agent, ip, path)
   group by 1
   order by count(*) desc
   limit limit_count;
@@ -129,11 +136,24 @@ returns json language sql stable as $$
   select json_build_object(
     'browsers', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
       (select browser as name, count(*)::bigint as count from page_views
-       where browser is not null and browser != '' group by browser order by count(*) desc limit 10) t),
+       where browser is not null and browser != ''
+         and not is_bot_page_view(user_agent, ip, path)
+       group by browser order by count(*) desc limit 10) t),
     'os', (select coalesce(json_agg(row_to_json(t)), '[]'::json) from
       (select os as name, count(*)::bigint as count from page_views
-       where os is not null and os != '' group by os order by count(*) desc limit 10) t)
+       where os is not null and os != ''
+         and not is_bot_page_view(user_agent, ip, path)
+       group by os order by count(*) desc limit 10) t)
   );
+$$;
+
+create or replace function get_recent(limit_count integer, include_bots boolean default false)
+returns table("timestamp" timestamptz, path text, ip text, browser text, os text, country text, referer text) language sql stable as $$
+  select "timestamp", path, ip, browser, os, country, referer
+  from page_views
+  where include_bots or not is_bot_page_view(user_agent, ip, path)
+  order by id desc
+  limit limit_count;
 $$;
 
 create or replace function cleanup_old_analytics(cutoff timestamptz)
@@ -319,9 +339,11 @@ returns json language sql stable as $$
   select json_build_object(
     'days_back', days_back,
     'total', (select count(*) from page_views
-              where days_back is null or "timestamp" >= now() - (days_back || ' days')::interval),
+              where not is_bot_page_view(user_agent, ip, path)
+                and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
     'unknown_or_null', (select count(*) from page_views
-              where (country is null or country = '' or country = 'Unknown')
+              where not is_bot_page_view(user_agent, ip, path)
+                and (country is null or country = '' or country = 'Unknown')
                 and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)),
     'unknown_ratio_pct', (
       select case when count(*) = 0 then 0
@@ -330,7 +352,8 @@ returns json language sql stable as $$
           / count(*), 1)
       end
       from page_views
-      where days_back is null or "timestamp" >= now() - (days_back || ' days')::interval
+      where not is_bot_page_view(user_agent, ip, path)
+        and (days_back is null or "timestamp" >= now() - (days_back || ' days')::interval)
     )
   );
 $$;

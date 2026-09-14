@@ -218,9 +218,20 @@ returns boolean language sql immutable as $$
         or lower(user_agent) like '%facebookexternalhit%'
         or lower(user_agent) like '%whatsapp/%'
         or lower(user_agent) like '%wordpresschecker%'
-        -- 2026-09-09追加(4): 既知のUA/OS詐称パターン（_is_known_spoof_ua と対応）
+        -- 2026-09-12/13スパイク追加: 脆弱性スキャナー系UA
+        or lower(user_agent) like '%nuclei%'
+        or lower(user_agent) like '%gobuster%'
+        or lower(user_agent) like '%xray%'
+        -- 2026-09-12/13追加: Mobile Safari 13.0.3 / iOS 13.2.3 詐称パターン
+        -- 本物のUAは Version/13.0.3 + Mobile/15E148 + Safari/604.1(WebKitビルド) を含む。
+        -- ボットは Version/13.0.3 と Mobile/15E148 を詐称するケースがあるため、
+        -- これらと iOS 13.2.3 の組み合わせを検出対象とする。
         or (
-          lower(user_agent) like '%safari/13.0.3%'
+          lower(user_agent) like '%mobile/15e148%'
+          and (
+            lower(user_agent) like '%version/13.0.3%'
+            or lower(user_agent) like '%safari/13.0.3%'
+          )
           and (
             lower(user_agent) like '%ios 13.2.3%'
             or lower(user_agent) like '%iphone os 13_2_3%'
@@ -273,6 +284,14 @@ returns boolean language sql immutable as $$
         or inet(ip) <<= inet '66.132.186.0/24'
         -- Hong Kong Other/Other
         or inet(ip) <<= inet '199.45.155.0/24'
+        -- 2026-09-12/13スパイク追加: Tencent Cloud上のMobile Safari偽装ボット/設定探索スキャナー群
+        or inet(ip) <<= inet '129.226.0.0/16'
+        or inet(ip) <<= inet '119.28.0.0/16'
+        or inet(ip) <<= inet '43.132.0.0/14'
+        or inet(ip) <<= inet '170.106.0.0/16'
+        -- 2026-09-12/13スパイク追加: DigitalOcean上のWordPress/設定探索スキャナー
+        or inet(ip) <<= inet '146.190.32.0/24'
+        or inet(ip) <<= inet '165.227.32.0/24'
       )
     )
     or
@@ -294,11 +313,28 @@ returns boolean language sql immutable as $$
         -- バックアップ探索系（プレフィックス）
         or lower(path) like '/backup%' or lower(path) like '/backups%'
         or lower(path) like '/dump%'
+        -- 2026-09-12/13スパイク追加: 設定/認証情報探索系スキャン（プレフィックス）
+        or lower(path) like '/system%' or lower(path) like '/storage%'
+        or lower(path) like '/store/app/etc%' or lower(path) like '/src/prisma%'
+        or lower(path) like '/_src%' or lower(path) like '/sphinxsearch%'
+        or lower(path) like '/.svn%' or lower(path) like '/database_credentials%'
+        or lower(path) like '/credentials%' or lower(path) like '/.credentials%'
+        or lower(path) like '/.dbeaver%' or lower(path) like '/sftp%'
+        or lower(path) like '/deployment-config%' or lower(path) like '/.config/sftp%'
+        or lower(path) like '/recentservers%' or lower(path) like '/filezilla%'
+        or lower(path) like '/ftpsync%' or lower(path) like '/secrets%'
         -- バックアップ/ダンプファイル拡張子（サフィックス）
         or lower(path) like '%.bak' or lower(path) like '%.sql'
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'
         -- 2026-09-09追加: VidScopeにPHPエンドポイントはないため、.phpで終わる全パスをスキャンとみなす
         or lower(path) like '%.php'
+        -- 2026-09-12/13スパイク追加: 設定/認証情報ファイル拡張子（サフィックス）
+        or lower(path) like '%.inc' or lower(path) like '%.yml'
+        or lower(path) like '%.yaml' or lower(path) like '%.xml'
+        or lower(path) like '%.conf' or lower(path) like '%.log'
+        or lower(path) like '%.settings' or lower(path) like '%.key'
+        or lower(path) like '%.db' or lower(path) like '%.sh'
+        or lower(path) like '%.history'
         -- 2026-09-09追加(5): 先頭ダブルスラッシュ等でプレフィックス判定をすり抜けるWordPressスキャンを捕捉
         or lower(path) like '%/wp-admin/%'
         or lower(path) like '%/wp-login.php%'
@@ -306,6 +342,9 @@ returns boolean language sql immutable as $$
         or lower(path) like '%/wp-includes/%'
         or lower(path) like '%/wp-json/%'
         or lower(path) like '%wlwmanifest.xml%'
+        -- 2026-09-12/13スパイク追加: WordPress関連の任意プレフィックススキャン
+        or lower(path) like '%/wp/%'
+        or lower(path) like '%/wordpress/%'
       )
     );
 $$;

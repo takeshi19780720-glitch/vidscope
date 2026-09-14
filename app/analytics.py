@@ -139,6 +139,10 @@ _BOT_UA_PATTERNS = (
     "wordpresschecker",        # WordPress脆弱性/監視ボット
     # --- ヘッドレスブラウザ系 ---
     "headlesschrom",    # HeadlessChrome / HeadlessChromium両方をカバー（共通プレフィックス）
+    # --- 脆弱性スキャナー系（2026-09-12/13スパイクで検出） ---
+    "nuclei",                  # ProjectDiscovery Nuclei scanner
+    "gobuster",                # Gobuster directory scanner
+    "xray",                    # XRay vulnerability scanner
 )
 
 # 脆弱性スキャン等でよく狙われるパス（プレフィックス/完全一致）
@@ -150,17 +154,26 @@ _SCAN_PATH_PREFIXES = (
     "/_profiler", "/debug/default/view", "/geoserver",
     # --- バックアップ探索系 ---
     "/backup", "/backups", "/dump",
+    # --- 2026-09-12/13スパイクで検出されたスキャン/認証情報探索系 ---
+    "/system", "/storage", "/store/app/etc", "/src/prisma", "/_src",
+    "/sphinxsearch", "/.svn", "/database_credentials", "/credentials",
+    "/.credentials", "/.dbeaver", "/sftp", "/deployment-config",
+    "/.config/sftp", "/recentservers", "/filezilla", "/ftpsync", "/secrets",
 )
 
 # 上記プレフィックスだけでは捉えられないWordPress関連のスキャン指紋。
 # 例: //test/wp-includes/wlwmanifest.xml, //wordpress/wp-admin/admin-ajax.php
 _WORDPRESS_SCAN_PATHS = (
-    "/wp-admin/", "/wp-login.php", "/wp-content/", "/wp-includes/", "/wp-json/", "wlwmanifest.xml"
+    "/wp-admin/", "/wp-login.php", "/wp-content/", "/wp-includes/", "/wp-json/",
+    "/wp/", "/wordpress/", "wlwmanifest.xml",
 )
 
-# バックアップ/ダンプファイルを狙うスキャンでよく使われる拡張子（末尾一致）
+# バックアップ/ダンプ/設定/認証情報ファイルを狙うスキャンでよく使われる拡張子（末尾一致）
 _SCAN_PATH_SUFFIXES = (
     ".bak", ".sql", ".zip", ".tar.gz", ".php",
+    # --- 2026-09-12/13スパイクで検出された設定/認証情報ファイル ---
+    ".inc", ".yml", ".yaml", ".xml", ".conf", ".log", ".settings", ".key",
+    ".db", ".sh", ".history",
 )
 
 # ボット/クローラーが利用することが判明しているIPレンジ（CIDR）。
@@ -219,6 +232,14 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     ("66.132.186.0/24", "US data-center scraper (Other/Other 2026-09-09)"),
     # Hong Kong Other/Other
     ("199.45.155.0/24", "Hong Kong data-center scraper (Other/Other 2026-09-09)"),
+    # 2026-09-12/13スパイク追加: Tencent Cloud上のMobile Safari偽装ボット/設定探索スキャナー群
+    ("129.226.0.0/16", "Tencent Cloud spoofed Mobile Safari bot (2026-09-12/13 spike)"),
+    ("119.28.0.0/16", "Tencent Cloud spoofed Mobile Safari bot (2026-09-12/13 spike)"),
+    ("43.132.0.0/14", "Tencent Cloud spoofed Mobile Safari bot (2026-09-12/13 spike)"),
+    ("170.106.0.0/16", "Tencent Cloud spoofed Mobile Safari bot (2026-09-12/13 spike)"),
+    # 2026-09-12/13スパイク追加: DigitalOcean上のWordPress/設定探索スキャナー
+    ("146.190.32.0/24", "DigitalOcean scanner (WP/config scan 2026-09-12/13)"),
+    ("165.227.32.0/24", "DigitalOcean scanner (WP/config scan 2026-09-12/13)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(
@@ -232,6 +253,11 @@ def _is_known_spoof_ua(user_agent: str, browser: str = "", os_name: str = "") ->
     UA文字列だけでなく、user_agents パーサーが出力する browser/os 値も使う。
     例えば Tencent Cloud 上のボットは "Mobile Safari 13.0.3 / iOS 13.2.3" に
     偽装していたため、IP判定だけでは該当IP帯外の漏れが発生する。
+
+    注意: 本物の iOS 13.2.3 Mobile Safari 13.0.3 の UA は
+    Version/13.0.3 と Mobile/15E148 を含み、Safari/604.1 などのWebKitビルド番号を
+    持つ。ボットは Version/13.0.3 と Mobile/15E148 を詐称するケースがあるため、
+    これらの組み合わせを検出対象とする。
     """
     if not user_agent:
         return False
@@ -239,16 +265,19 @@ def _is_known_spoof_ua(user_agent: str, browser: str = "", os_name: str = "") ->
     browser_lower = browser.lower() if browser else ""
     os_lower = os_name.lower() if os_name else ""
 
-    is_mobile_safari_13_0_3 = (
+    has_mobile_safari_13_0_3 = (
         "mobile safari 13.0.3" in browser_lower
         or "safari/13.0.3" in ua_lower
+        or "version/13.0.3" in ua_lower
     )
-    is_ios_13_2_3 = (
+    has_ios_13_2_3 = (
         "ios 13.2.3" in os_lower
         or "ios 13.2.3" in ua_lower
+        or "iphone os 13_2_3" in ua_lower
         or "13_2_3" in ua_lower
     )
-    return is_mobile_safari_13_0_3 and is_ios_13_2_3
+    has_mobile_15e148 = "mobile/15e148" in ua_lower
+    return has_mobile_safari_13_0_3 and has_ios_13_2_3 and has_mobile_15e148
 
 
 def _is_bot_user_agent(user_agent: str) -> bool:

@@ -52,13 +52,18 @@ def _sql_ua_regex_pattern() -> str:
 
 
 def _sql_ua_like_keywords() -> list[str]:
-    """SQL内の lower(user_agent) like '%xxx%' のxxx部分を全て抽出する。"""
+    """SQL内の lower(user_agent) like '%xxx%' のxxx部分を全て抽出する。
+
+    UAブロックから、既知のUA/OS詐称パターン（Mobile Safari 13.0.3/iOS 13.2.3）
+    の判定部分は除外する。該当部分は複数のLIKEをANDで組み合わせた独立した
+    判定であり、単独のLIKEキーワードとして扱うと誤検知するため。
+    """
     body = _extract_is_bot_page_view_sql()
-    # UAブロックのみ（IPブロック開始より前、かつ既知のUA/OS詐称パターンより前）に限定する
-    ua_block_end = min(
-        body.index("既知のbot/クローラーIPレンジ"),
-        body.index("既知のUA/OS詐称パターン"),
-    )
+    # UAブロック: IPブロック開始より前、かつ詐称パターンコメントより前
+    ua_block_end = body.index("既知のbot/クローラーIPレンジ")
+    spoof_comment = "Mobile Safari 13.0.3 / iOS 13.2.3 詐称パターン"
+    if spoof_comment in body:
+        ua_block_end = min(ua_block_end, body.index(spoof_comment))
     ua_block = body[:ua_block_end]
     return re.findall(r"lower\(user_agent\)\s+like\s+'%([^%']+)%'", ua_block)
 
@@ -116,14 +121,18 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
         except ValueError:
             ip_match = False
 
-    # 2026-09-09追加(4): Tencent Cloudが偽装する Mobile Safari 13.0.3 / iOS 13.2.3 パターン
+    # 2026-09-12/13追加: Mobile Safari 13.0.3 / iOS 13.2.3 詐称パターン
     spoof_match = False
     if user_agent:
         ua_lower = user_agent.lower()
-        if "safari/13.0.3" in ua_lower and (
-            "13_2_3" in ua_lower
-            or "ios 13.2.3" in ua_lower
-            or "iphone os 13_2_3" in ua_lower
+        if (
+            "mobile/15e148" in ua_lower
+            and ("version/13.0.3" in ua_lower or "safari/13.0.3" in ua_lower)
+            and (
+                "13_2_3" in ua_lower
+                or "ios 13.2.3" in ua_lower
+                or "iphone os 13_2_3" in ua_lower
+            )
         ):
             spoof_match = True
 
@@ -136,7 +145,8 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
             path_match = True
         elif any(kw in path_lower for kw in (
             "/wp-admin/", "/wp-login.php", "/wp-content/",
-            "/wp-includes/", "/wp-json/", "wlwmanifest.xml"
+            "/wp-includes/", "/wp-json/", "wlwmanifest.xml",
+            "/wp/", "/wordpress/",
         )):
             path_match = True
 
@@ -1632,6 +1642,169 @@ class PostV5SqlEquivalenceTests(unittest.TestCase):
                     f"期待値={expected} Python判定={python_result}: "
                     f"ua={user_agent!r} ip={ip!r} path={path!r}",
                 )
+
+class BotFilterTests2026Sep12(unittest.TestCase):
+    """2026-09-12/13スパイク対応で追加したフィルタのテスト。"""
+
+    # ---- 脆弱性スキャナー系UA ----
+
+    def test_nuclei_ua_is_bot(self):
+        self.assertTrue(analytics._is_bot_user_agent("Nuclei/3.0.0"))
+
+    def test_gobuster_ua_is_bot(self):
+        self.assertTrue(analytics._is_bot_user_agent("gobuster/3.6"))
+
+    def test_xray_ua_is_bot(self):
+        self.assertTrue(analytics._is_bot_user_agent("Mozilla/5.0 (X11; Linux x86_64) XRay/1.0"))
+
+    # ---- 新規Tencent Cloud IPレンジ ----
+
+    def test_tencent_129_226_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("129.226.50.10"))
+
+    def test_tencent_119_28_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("119.28.100.20"))
+
+    def test_tencent_43_132_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("43.134.5.5"))
+
+    def test_tencent_170_106_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("170.106.77.88"))
+
+    # ---- 新規DigitalOcean IPレンジ ----
+
+    def test_digitalocean_146_190_32_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("146.190.32.50"))
+
+    def test_digitalocean_165_227_32_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("165.227.32.77"))
+
+    # ---- 新規スキャンパス/サフィックス ----
+
+    def test_system_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/system/config.json"))
+
+    def test_storage_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/storage/index.php"))
+
+    def test_credentials_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/credentials/admin.yml"))
+
+    def test_secrets_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/secrets.env"))
+
+    def test_xml_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/config/settings.xml"))
+
+    def test_yml_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/docker-compose.yml"))
+
+    def test_history_suffix_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/bash.history"))
+
+    # ---- Mobile Safari 13.0.3 詐称（Version/13.0.3 + Mobile/15E148） ----
+
+    def test_spoof_with_version_13_0_3_and_mobile_15e148_is_bot(self):
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 "
+            "Mobile/15E148 Safari/604.1"
+        )
+        self.assertTrue(analytics._is_known_spoof_ua(ua, "Mobile Safari 13.0.3", "iOS 13.2.3"))
+
+    def test_spoof_without_mobile_15e148_is_not_detected(self):
+        # Mobile/15E148 がない場合は検知しない（本物とは区別できないため）
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Safari/604.1"
+        )
+        self.assertFalse(analytics._is_known_spoof_ua(ua, "Mobile Safari 13.0.3", "iOS 13.2.3"))
+
+
+class BotFilterSqlEquivalenceTests2026Sep12(unittest.TestCase):
+    """2026-09-12/13スパイク追加パターンのSQL/Python等価性テスト。"""
+
+    NEW_CASES = [
+        # スキャナー系UA
+        ("Nuclei/3.0.0", "1.2.3.4", "/", True),
+        ("gobuster/3.6", "1.2.3.4", "/", True),
+        ("Mozilla/5.0 XRay/1.0", "1.2.3.4", "/", True),
+        # 新規IPレンジ
+        ("Mozilla/5.0 normal browser", "129.226.50.10", "/", True),
+        ("Mozilla/5.0 normal browser", "119.28.100.20", "/", True),
+        ("Mozilla/5.0 normal browser", "43.134.5.5", "/", True),
+        ("Mozilla/5.0 normal browser", "170.106.77.88", "/", True),
+        ("Mozilla/5.0 normal browser", "146.190.32.50", "/", True),
+        ("Mozilla/5.0 normal browser", "165.227.32.77", "/", True),
+        # 新規スキャンパス/サフィックス
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/system/config.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/storage/index.php", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/credentials/admin.yml", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/secrets.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/config/settings.xml", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/docker-compose.yml", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/bash.history", True),
+        # Version/13.0.3 + Mobile/15E148 詐称
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 "
+            "Mobile/15E148 Safari/604.1",
+            "126.0.0.1",
+            "/",
+            True,
+        ),
+        # 通常UA
+        (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+            "Mobile/15E148 Safari/604.1",
+            "126.0.0.1",
+            "/",
+            False,
+        ),
+    ]
+
+    def test_new_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_CASES:
+            with self.subTest(ua=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+
+    def test_sql_ip_cidrs_include_new_spike_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in (
+            "129.226.0.0/16",
+            "119.28.0.0/16",
+            "43.132.0.0/14",
+            "170.106.0.0/16",
+            "146.190.32.0/24",
+            "165.227.32.0/24",
+        ):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_sep12(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（2026-09-12/13追加後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
 
 if __name__ == "__main__":
     unittest.main()

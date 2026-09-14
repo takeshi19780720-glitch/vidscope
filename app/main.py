@@ -669,6 +669,22 @@ def analytics_daily_breakdown(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/admin/analytics/daily-detail")
+def analytics_daily_detail(
+    date: str = Query(..., description="Target date (YYYY-MM-DD or RFC2822 style e.g. 'Mon Sep 14 18:49:20 JST 2026')"),
+    x_admin_password: str = Header(None),
+):
+    """指定日の詳細内訳を返す（top IPs/paths/browsers/countries/referrers、raw/filtered併記）。
+
+    daily-breakdown と同一の集計結果を返すエイリアス。
+    """
+    _require_admin(x_admin_password)
+    try:
+        return analytics.get_daily_breakdown(date)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/admin/analytics/top-countries-with-raw")
 def analytics_top_countries_with_raw(
     days: int | None = Query(None, ge=1, le=365),

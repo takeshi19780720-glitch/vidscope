@@ -4,8 +4,9 @@ import ipaddress
 import logging
 import threading
 import time
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from user_agents import parse as parse_ua
 
 from app import supabase_client as sb
@@ -600,6 +601,135 @@ def _bot_ratio(raw: int, filtered: int) -> float:
     if not raw:
         return 0.0
     return round((raw - filtered) / raw * 100, 1)
+
+
+def _parse_breakdown_date(date_str: str) -> date:
+    """管理画面用日付パラメータを date 型に変換する。
+
+    受け付ける形式:
+      - ISO: 2026-09-12
+      - RFC2822風: Mon Sep 14 18:49:20 JST 2026
+    それ以外は ValueError を送出する。
+    """
+    date_str = date_str.strip()
+    # ISO形式 (YYYY-MM-DD)
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        pass
+    # タイムスタンプ形式: Mon Sep 14 18:49:20 JST 2026
+    try:
+        dt = datetime.strptime(date_str, "%a %b %d %H:%M:%S %Z %Y")
+        return dt.date()
+    except ValueError:
+        pass
+    raise ValueError(f"Unsupported date format: {date_str!r}")
+
+
+def get_daily_breakdown(date_str: str) -> dict:
+    """指定日（UTC日付）の詳細内訳を返す。
+
+    top_ips / top_paths は raw/filtered 件数を併記する。
+    top_browsers / top_countries / top_referrers も同様。
+    集計は page_views の "timestamp" が [target_date, target_date+1day) のレコードを対象とする。
+    """
+    target_date = _parse_breakdown_date(date_str)
+    start = datetime(target_date.year, target_date.month, target_date.day, tzinfo=timezone.utc)
+    end = start + timedelta(days=1)
+
+    rows = sb.select(
+        "page_views",
+        select="timestamp,path,ip,user_agent,browser,os,country,referer",
+        filters={
+            "timestamp": f"gte.{start.isoformat()}",
+            "and": f"(timestamp.lt.{end.isoformat()})",
+        },
+        order="timestamp.desc",
+        limit=5000,
+    )
+    if rows is None:
+        rows = []
+
+    def _is_bot(row: dict) -> bool:
+        return (
+            _is_bot_user_agent(row.get("user_agent") or "")
+            or _is_known_spoof_ua(
+                row.get("user_agent") or "",
+                row.get("browser") or "",
+                row.get("os") or "",
+            )
+            or _is_bot_ip(row.get("ip") or "")
+            or _is_scan_path(row.get("path") or "")
+        )
+
+    def _domain(referer: str | None) -> str:
+        if not referer:
+            return "Direct / (none)"
+        s = referer.lower().strip()
+        if "://" in s:
+            s = s.split("://", 1)[1]
+        domain = s.split("/")[0].split("?")[0].split("#")[0]
+        if domain.startswith("www."):
+            domain = domain[4:]
+        return domain
+
+    ip_counter: Counter = Counter()
+    ip_filtered_counter: Counter = Counter()
+    path_counter: Counter = Counter()
+    path_filtered_counter: Counter = Counter()
+    browser_counter: Counter = Counter()
+    browser_filtered_counter: Counter = Counter()
+    country_counter: Counter = Counter()
+    country_filtered_counter: Counter = Counter()
+    referrer_counter: Counter = Counter()
+    referrer_filtered_counter: Counter = Counter()
+
+    for row in rows:
+        ip = row.get("ip") or "(unknown)"
+        path = row.get("path") or "/"
+        browser = row.get("browser") or "(unknown)"
+        country = row.get("country") or "Unknown"
+        referer_domain = _domain(row.get("referer"))
+        bot = _is_bot(row)
+
+        ip_counter[ip] += 1
+        path_counter[path] += 1
+        if browser:
+            browser_counter[browser] += 1
+        if country:
+            country_counter[country] += 1
+        referrer_counter[referer_domain] += 1
+
+        if not bot:
+            ip_filtered_counter[ip] += 1
+            path_filtered_counter[path] += 1
+            if browser:
+                browser_filtered_counter[browser] += 1
+            if country:
+                country_filtered_counter[country] += 1
+            referrer_filtered_counter[referer_domain] += 1
+
+    def _top(counter: Counter, filtered: Counter, limit: int) -> list[dict]:
+        return [
+            {
+                "name": name,
+                "raw_count": count,
+                "filtered_count": filtered.get(name, 0),
+                "bot_ratio": _bot_ratio(count, filtered.get(name, 0)),
+            }
+            for name, count in counter.most_common(limit)
+        ]
+
+    return {
+        "date": target_date.isoformat(),
+        "total_raw": len(rows),
+        "total_filtered": sum(1 for row in rows if not _is_bot(row)),
+        "top_ips": _top(ip_counter, ip_filtered_counter, 20),
+        "top_paths": _top(path_counter, path_filtered_counter, 20),
+        "top_browsers": _top(browser_counter, browser_filtered_counter, 10),
+        "top_countries": _top(country_counter, country_filtered_counter, 10),
+        "top_referrers": _top(referrer_counter, referrer_filtered_counter, 10),
+    }
 
 
 def get_pageviews(days: int = 7, offset_days: int = 0) -> list[dict]:

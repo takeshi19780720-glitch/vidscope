@@ -147,6 +147,8 @@ def _sql_is_bot_page_view(user_agent: str | None, ip: str | None, path: str | No
             "/wp-admin/", "/wp-login.php", "/wp-content/",
             "/wp-includes/", "/wp-json/", "wlwmanifest.xml",
             "/wp/", "/wordpress/",
+            # --- 2026-09-18/20スパイク: 任意ディレクトリ配下の .env ---
+            "/.env",
         )):
             path_match = True
 
@@ -1801,6 +1803,287 @@ class BotFilterSqlEquivalenceTests2026Sep12(unittest.TestCase):
 
     def test_sql_ip_cidrs_match_python_bot_ip_ranges_sep12(self):
         """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（2026-09-12/13追加後も）。"""
+        sql_cidrs = set(_sql_ip_cidrs())
+        python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
+        self.assertEqual(sql_cidrs, python_cidrs)
+
+
+class BotFilterTests2026Sep18_20(unittest.TestCase):
+    """2026-09-18/20スパイク対応で追加した設定/認証情報探索フィルタのテスト。"""
+
+    # ---- Google Cloud 34.94.0.0/16 ----
+
+    def test_google_cloud_34_94_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.94.154.180"))
+
+    def test_google_cloud_34_94_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.94.0.0"))
+
+    def test_google_cloud_34_94_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.94.255.255"))
+
+    def test_just_below_google_cloud_34_94_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.93.255.255"))
+
+    def test_just_above_google_cloud_34_94_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.95.0.0"))
+
+    # ---- Google Cloud 35.205.0.0/16 ----
+
+    def test_google_cloud_35_205_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("35.205.88.64"))
+
+    def test_google_cloud_35_205_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("35.205.0.0"))
+
+    def test_google_cloud_35_205_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("35.205.255.255"))
+
+    def test_just_below_google_cloud_35_205_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("35.204.255.255"))
+
+    def test_just_above_google_cloud_35_205_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("35.206.0.0"))
+
+    # ---- Hosting 45.138.12.0/24 ----
+
+    def test_hosting_45_138_12_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.138.12.22"))
+
+    def test_hosting_45_138_12_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.138.12.0"))
+
+    def test_hosting_45_138_12_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("45.138.12.255"))
+
+    def test_just_below_hosting_45_138_12_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("45.138.11.255"))
+
+    def test_just_above_hosting_45_138_12_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("45.138.13.0"))
+
+    # ---- Google Cloud 34.156.0.0/16 ----
+
+    def test_google_cloud_34_156_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.156.22.222"))
+
+    def test_google_cloud_34_156_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.156.0.0"))
+
+    def test_google_cloud_34_156_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.156.255.255"))
+
+    def test_just_below_google_cloud_34_156_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.155.255.255"))
+
+    def test_just_above_google_cloud_34_156_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.157.0.0"))
+
+    # ---- Google Cloud 34.38.0.0/16 ----
+
+    def test_google_cloud_34_38_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.38.113.44"))
+
+    def test_google_cloud_34_38_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.38.0.0"))
+
+    def test_google_cloud_34_38_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("34.38.255.255"))
+
+    def test_just_below_google_cloud_34_38_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.37.255.255"))
+
+    def test_just_above_google_cloud_34_38_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("34.39.0.0"))
+
+    # ---- Hosting 195.178.110.0/24 ----
+
+    def test_hosting_195_178_110_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("195.178.110.15"))
+
+    def test_hosting_195_178_110_first_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("195.178.110.0"))
+
+    def test_hosting_195_178_110_last_is_bot(self):
+        self.assertTrue(analytics._is_bot_ip("195.178.110.255"))
+
+    def test_just_below_hosting_195_178_110_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("195.178.109.255"))
+
+    def test_just_above_hosting_195_178_110_is_not_bot(self):
+        self.assertFalse(analytics._is_bot_ip("195.178.111.0"))
+
+    # ---- 新規スキャンパス（プレフィックス/部分一致） ----
+
+    def test_env_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/env"))
+
+    def test_config_aws_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/config/aws.json"))
+
+    def test_appsettings_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/appsettings.json"))
+
+    def test_appsettings_production_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/appsettings.Production.json"))
+
+    def test_appsettings_development_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/appsettings.Development.json"))
+
+    def test_settings_ini_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/settings.ini"))
+
+    def test_terraform_tfvars_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/terraform.tfvars"))
+
+    def test_application_default_credentials_json_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/application_default_credentials.json"))
+
+    def test_gcloud_credentials_path_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/.config/gcloud/application_default_credentials.json"))
+
+    def test_phpinfo_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/phpinfo"))
+
+    def test_var_www_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/var/www/.env"))
+
+    def test_public_html_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/public_html/.env"))
+
+    def test_web_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/web/.env"))
+
+    def test_public_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/public/.env"))
+
+    def test_test_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/test/.env"))
+
+    def test_v1_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/v1/.env"))
+
+    def test_v2_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/v2/.env"))
+
+    def test_v3_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/v3/.env"))
+
+    def test_src_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/src/.env"))
+
+    def test_server_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/server/.env"))
+
+    def test_staging_env_is_scan_path(self):
+        self.assertTrue(analytics._is_scan_path("/staging/.env"))
+
+    def test_normal_blog_path_is_not_scan_path(self):
+        self.assertFalse(analytics._is_scan_path("/blog/youtube-cpm-rpm-calculation-guide"))
+
+    def test_normal_app_path_is_not_scan_path(self):
+        self.assertFalse(analytics._is_scan_path("/app"))
+
+
+class BotFilterSqlEquivalenceTests2026Sep18_20(unittest.TestCase):
+    """2026-09-18/20追加パターンのSQL/Python等価性テスト。"""
+
+    NEW_CASES = [
+        # 新規IPレンジ
+        ("Mozilla/5.0 normal browser", "34.94.154.180", "/", True),
+        ("Mozilla/5.0 normal browser", "34.94.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "34.94.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "34.93.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "34.95.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "35.205.88.64", "/", True),
+        ("Mozilla/5.0 normal browser", "35.205.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "35.205.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "35.204.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "35.206.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "45.138.12.22", "/", True),
+        ("Mozilla/5.0 normal browser", "45.138.12.0", "/", True),
+        ("Mozilla/5.0 normal browser", "45.138.12.255", "/", True),
+        ("Mozilla/5.0 normal browser", "45.138.11.255", "/", False),
+        ("Mozilla/5.0 normal browser", "45.138.13.0", "/", False),
+        ("Mozilla/5.0 normal browser", "34.156.22.222", "/", True),
+        ("Mozilla/5.0 normal browser", "34.156.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "34.156.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "34.155.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "34.157.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "34.38.113.44", "/", True),
+        ("Mozilla/5.0 normal browser", "34.38.0.0", "/", True),
+        ("Mozilla/5.0 normal browser", "34.38.255.255", "/", True),
+        ("Mozilla/5.0 normal browser", "34.37.255.255", "/", False),
+        ("Mozilla/5.0 normal browser", "34.39.0.0", "/", False),
+        ("Mozilla/5.0 normal browser", "195.178.110.15", "/", True),
+        ("Mozilla/5.0 normal browser", "195.178.110.0", "/", True),
+        ("Mozilla/5.0 normal browser", "195.178.110.255", "/", True),
+        ("Mozilla/5.0 normal browser", "195.178.109.255", "/", False),
+        ("Mozilla/5.0 normal browser", "195.178.111.0", "/", False),
+        # 新規スキャンパス
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/config/aws.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/appsettings.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/appsettings.Production.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/appsettings.Development.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/settings.ini", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/terraform.tfvars", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/application_default_credentials.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/.config/gcloud/application_default_credentials.json", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/phpinfo", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/var/www/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/public_html/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/web/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/public/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/test/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/v1/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/v2/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/v3/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/src/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/server/.env", True),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/staging/.env", True),
+        # 通常パス
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/blog/youtube-cpm-rpm-calculation-guide", False),
+        ("Mozilla/5.0 normal browser", "126.0.0.1", "/app", False),
+    ]
+
+    def test_new_patterns_python_matches_sql(self):
+        for user_agent, ip, path, expected in self.NEW_CASES:
+            with self.subTest(ua=user_agent, ip=ip, path=path):
+                python_result = (
+                    analytics._is_bot_user_agent(user_agent or "")
+                    or analytics._is_known_spoof_ua(user_agent or "")
+                    or analytics._is_bot_ip(ip or "")
+                    or analytics._is_scan_path(path or "")
+                )
+                sql_result = _sql_is_bot_page_view(user_agent, ip, path)
+                self.assertEqual(
+                    python_result,
+                    sql_result,
+                    f"Python/SQL不一致: ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+                self.assertEqual(
+                    python_result,
+                    expected,
+                    f"期待値={expected} Python判定={python_result}: "
+                    f"ua={user_agent!r} ip={ip!r} path={path!r}",
+                )
+
+    def test_sql_ip_cidrs_include_new_spike_ranges(self):
+        sql_cidrs = set(_sql_ip_cidrs())
+        for cidr in (
+            "34.94.0.0/16",
+            "35.205.0.0/16",
+            "45.138.12.0/24",
+            "34.156.0.0/16",
+            "34.38.0.0/16",
+            "195.178.110.0/24",
+        ):
+            with self.subTest(cidr=cidr):
+                self.assertIn(cidr, sql_cidrs)
+
+    def test_sql_ip_cidrs_match_python_bot_ip_ranges_sep18_20(self):
+        """SQL側CIDRセットとPython側 _BOT_IP_RANGES が完全一致すること（2026-09-18/20追加後も）。"""
         sql_cidrs = set(_sql_ip_cidrs())
         python_cidrs = {cidr for cidr, _comment in analytics._BOT_IP_RANGES}
         self.assertEqual(sql_cidrs, python_cidrs)

@@ -159,6 +159,14 @@ _SCAN_PATH_PREFIXES = (
     "/sphinxsearch", "/.svn", "/database_credentials", "/credentials",
     "/.credentials", "/.dbeaver", "/sftp", "/deployment-config",
     "/.config/sftp", "/recentservers", "/filezilla", "/ftpsync", "/secrets",
+    # --- 2026-09-18/20スパイク: 設定/認証情報ファイル探索系 ---
+    "/env", "/config/aws.json", "/appsettings.json",
+    "/appsettings.production.json", "/appsettings.development.json",
+    "/settings.ini", "/terraform.tfvars", "/application_default_credentials.json",
+    "/.config/gcloud/", "/phpinfo",
+    # --- 2026-09-18/20スパイク: スキャナーが多用するディレクトリプレフィックス ---
+    "/var/www/", "/public_html/", "/web/", "/staging/", "/server/",
+    "/test/", "/v1/", "/v2/", "/v3/", "/src/",
 )
 
 # 上記プレフィックスだけでは捉えられないWordPress関連のスキャン指紋。
@@ -174,6 +182,14 @@ _SCAN_PATH_SUFFIXES = (
     # --- 2026-09-12/13スパイクで検出された設定/認証情報ファイル ---
     ".inc", ".yml", ".yaml", ".xml", ".conf", ".log", ".settings", ".key",
     ".db", ".sh", ".history",
+)
+
+# 任意の階層に出現する認証情報/設定ファイルの指紋（部分一致）。
+# 例: /var/www/.env, /public_html/.env など、先頭プレフィックスだけでは捉えられない
+# 任意ディレクトリ配下の .env をブロックする。
+_SCAN_PATH_SUBSTRINGS = (
+    # --- 2026-09-18/20スパイク: 任意ディレクトリ配下の .env ファイル ---
+    "/.env",
 )
 
 # ボット/クローラーが利用することが判明しているIPレンジ（CIDR）。
@@ -240,6 +256,17 @@ _BOT_IP_RANGES: tuple[tuple[str, str], ...] = (
     # 2026-09-12/13スパイク追加: DigitalOcean上のWordPress/設定探索スキャナー
     ("146.190.32.0/24", "DigitalOcean scanner (WP/config scan 2026-09-12/13)"),
     ("165.227.32.0/24", "DigitalOcean scanner (WP/config scan 2026-09-12/13)"),
+    # 2026-09-18/20スパイク追加: VidScope daily-detailで検出された設定/認証情報探索スキャナー群
+    # 9/18: 34.94.154.180 (364 hits), 35.205.88.64 (135 hits) — Google Cloud
+    ("34.94.0.0/16", "Google Cloud config/credential scan (2026-09-18 spike)"),
+    ("35.205.0.0/16", "Google Cloud config/credential scan (2026-09-18 spike)"),
+    # 9/18: 45.138.12.22 (137 hits) — ホスティング系
+    ("45.138.12.0/24", "Hosting config/credential scan (2026-09-18 spike)"),
+    # 9/20: 34.156.22.222 (138 hits), 34.38.113.44 (136 hits) — Google Cloud
+    ("34.156.0.0/16", "Google Cloud config/credential scan (2026-09-20 spike)"),
+    ("34.38.0.0/16", "Google Cloud config/credential scan (2026-09-20 spike)"),
+    # 9/20: 195.178.110.15 (241 hits) — ホスティング系
+    ("195.178.110.0/24", "Hosting config/credential scan (2026-09-20 spike)"),
 )
 
 _BOT_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = tuple(
@@ -325,6 +352,8 @@ def _is_scan_path(path: str) -> bool:
     if any(path_lower.startswith(prefix) for prefix in _SCAN_PATH_PREFIXES):
         return True
     if any(path_lower.endswith(suffix) for suffix in _SCAN_PATH_SUFFIXES):
+        return True
+    if any(substr in path_lower for substr in _SCAN_PATH_SUBSTRINGS):
         return True
     # WordPress関連のスキャンパスは任意のプレフィックスの後に出現することがある
     # 例: //test/wp-includes/wlwmanifest.xml, //wordpress/wp-admin/admin-ajax.php

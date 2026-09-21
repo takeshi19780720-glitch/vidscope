@@ -115,6 +115,17 @@ returns boolean language sql immutable as $$
         -- 2026-09-12/13スパイク追加: DigitalOcean上のWordPress/設定探索スキャナー
         or inet(ip) <<= inet '146.190.32.0/24'
         or inet(ip) <<= inet '165.227.32.0/24'
+        -- 2026-09-18/20スパイク追加: VidScope daily-detailで検出された設定/認証情報探索スキャナー群
+        -- 9/18: 34.94.154.180 (364 hits), 35.205.88.64 (135 hits) — Google Cloud
+        or inet(ip) <<= inet '34.94.0.0/16'
+        or inet(ip) <<= inet '35.205.0.0/16'
+        -- 9/18: 45.138.12.22 (137 hits) — ホスティング系
+        or inet(ip) <<= inet '45.138.12.0/24'
+        -- 9/20: 34.156.22.222 (138 hits), 34.38.113.44 (136 hits) — Google Cloud
+        or inet(ip) <<= inet '34.156.0.0/16'
+        or inet(ip) <<= inet '34.38.0.0/16'
+        -- 9/20: 195.178.110.15 (241 hits) — ホスティング系
+        or inet(ip) <<= inet '195.178.110.0/24'
       )
     )
     or
@@ -146,6 +157,20 @@ returns boolean language sql immutable as $$
         or lower(path) like '/deployment-config%' or lower(path) like '/.config/sftp%'
         or lower(path) like '/recentservers%' or lower(path) like '/filezilla%'
         or lower(path) like '/ftpsync%' or lower(path) like '/secrets%'
+        -- 2026-09-18/20スパイク追加: 設定/認証情報ファイル探索系（プレフィックス/完全一致）
+        or lower(path) like '/env%' or lower(path) like '/config/aws.json%'
+        or lower(path) like '/appsettings.json%' or lower(path) like '/appsettings.production.json%'
+        or lower(path) like '/appsettings.development.json%' or lower(path) like '/settings.ini%'
+        or lower(path) like '/terraform.tfvars%' or lower(path) like '/application_default_credentials.json%'
+        or lower(path) like '/.config/gcloud/%' or lower(path) like '/phpinfo%'
+        -- 2026-09-18/20スパイク追加: スキャナーが多用するディレクトリプレフィックス
+        or lower(path) like '/var/www/%' or lower(path) like '/public_html/%'
+        or lower(path) like '/web/%' or lower(path) like '/staging/%'
+        or lower(path) like '/server/%' or lower(path) like '/test/%'
+        or lower(path) like '/v1/%' or lower(path) like '/v2/%'
+        or lower(path) like '/v3/%' or lower(path) like '/src/%'
+        -- 2026-09-18/20スパイク追加: 任意ディレクトリ配下の .env ファイル
+        or lower(path) like '%/.env'
         -- バックアップ/ダンプファイル拡張子（サフィックス）
         or lower(path) like '%.bak' or lower(path) like '%.sql'
         or lower(path) like '%.zip' or lower(path) like '%.tar.gz'

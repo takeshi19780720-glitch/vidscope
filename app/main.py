@@ -310,6 +310,26 @@ def blog_youtube_niche_research_guide_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/youtube-niche-research-guide.html")
 
 
+_SLUG_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+@app.get("/blog/{slug}")
+@limiter.limit("60/minute")
+def blog_dynamic_page(request: Request, slug: str) -> FileResponse:
+    """Dynamic route for blog articles under static/blog/{slug}.html.
+
+    Kept explicit routes above for backward compatibility / SEO canonicals.
+    """
+    if not _SLUG_RE.match(slug):
+        raise HTTPException(status_code=404, detail="Not found")
+    # Use a relative path rooted at the project directory; normalize to prevent traversal.
+    base_dir = Path(__file__).resolve().parent.parent
+    file_path = (base_dir / "static" / "blog" / f"{slug}.html").resolve()
+    if not file_path.is_file() or not str(file_path).startswith(str(base_dir / "static" / "blog")):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(file_path, media_type="text/html")
+
+
 @app.post("/api/contact")
 async def submit_contact(request: Request):
     from datetime import datetime

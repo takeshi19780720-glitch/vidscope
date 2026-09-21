@@ -331,6 +331,9 @@ def _is_scan_path(path: str) -> bool:
     return _is_wordpress_scan_path(path_lower)
 
 
+# ミドルウェア等からも同じ判定を使えるよう公開エイリアス
+_is_known_scan_path = _is_scan_path
+
 # リファラースパムの既知ドメイン。
 # 「ぴったり同数リクエスト×複数ドメイン」というリファラースパム特有のパターンで検出。
 # 新たなスパムドメインが出現した場合はここに追加する。

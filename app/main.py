@@ -110,6 +110,112 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
             pass
         return response
 
+
+# --- Bot/スキャナー防御ミドルウェア ---
+class BotShieldMiddleware(BaseHTTPMiddleware):
+    """脆弱性スキャンパスをミドルウェア層で遮断し、AnalyticsMiddleware到達前に排除する。
+
+    特徴:
+    - analytics._is_known_scan_path と同一のスキャンパターンで判定
+    - スキャンパスへのリクエストは即座に HTTP 403 を返し、X-VidScope-Bot-Shield: blocked ヘッダーを付与
+    - 同一IPから5分以内に3回以上スキャンパスにヒットすると24時間IPブロック
+    - IPブロック中は X-VidScope-Bot-Shield: ip-blocked で即座に403
+    - スキャンパスには更に10/分のin-memoryレート制限を適用（429）
+
+    注意:
+    - ブロックリストはプロセス内メモリのため、デプロイ/再起動でリセットされる
+    - 大規模DDoSには不向き（Cloudflare等の上流防御と併用することが推奨）
+    """
+
+    _BLOCK_DURATION_SEC = 24 * 60 * 60  # 24時間
+    _SCAN_WINDOW_SEC = 5 * 60           # 5分
+    _SCAN_THRESHOLD = 3                 # 5分間に3回でブロック
+    _SCAN_RATE_LIMIT_PER_MIN = 10       # スキャンパス10/分
+
+    _blocked_ips: dict[str, float] = {}   # ip -> unblock_timestamp
+    _scan_hits: dict[tuple[str, int], int] = {}  # (ip, minute_bucket) -> count
+    _scan_rate_hits: dict[tuple[str, int], int] = {}  # (ip, minute_bucket) -> count
+
+    async def dispatch(self, request: Request, call_next):
+        ip = _get_client_ip(request)
+        now = time.time()
+
+        # 1. IPブロックリスト照会
+        unblock_at = self._blocked_ips.get(ip)
+        if unblock_at and now < unblock_at:
+            return Response(
+                status_code=403,
+                headers={"X-VidScope-Bot-Shield": "ip-blocked"},
+                content="Forbidden: IP temporarily blocked due to scan activity.",
+            )
+        if unblock_at and now >= unblock_at:
+            # 期限切れなら解除
+            self._blocked_ips.pop(ip, None)
+
+        path = request.url.path
+        is_scan = analytics._is_known_scan_path(path)
+
+        if is_scan:
+            # 2. スキャンパスのレート制限（10/分 per IP）
+            minute_bucket = int(now // 60)
+            rate_key = (ip, minute_bucket)
+            self._scan_rate_hits[rate_key] = self._scan_rate_hits.get(rate_key, 0) + 1
+            # 古い1分前のバケットを掃除（2つ前まで保持しておけば十分）
+            self._prune_old(self._scan_rate_hits, minute_bucket - 2)
+            if self._scan_rate_hits[rate_key] > self._SCAN_RATE_LIMIT_PER_MIN:
+                return Response(
+                    status_code=429,
+                    headers={"X-VidScope-Bot-Shield": "rate-limited"},
+                    content="Too Many Requests: scan path rate limit exceeded.",
+                )
+
+            # 3. 自動IPブロック判定（5分間スライディングウィンドウ）
+            self._record_scan_hit(ip, now)
+            if self._should_block_ip(ip, now) and ip not in self._blocked_ips:
+                self._blocked_ips[ip] = now + self._BLOCK_DURATION_SEC
+                self._clear_scan_hits(ip)
+                import logging
+                logging.getLogger("vidscope").warning(
+                    "BotShield: IP %s temporarily blocked for 24 hours after %d scan hits in 5 minutes",
+                    ip,
+                    self._SCAN_THRESHOLD,
+                )
+            # このリクエスト自体は通常のスキャンパス遮断応答を返す。
+            # 次回以降のリクエストで ip-blocked ヘッダーが付く。
+            return Response(
+                status_code=403,
+                headers={"X-VidScope-Bot-Shield": "blocked"},
+                content="Forbidden: known scan path.",
+            )
+
+        return await call_next(request)
+
+    def _record_scan_hit(self, ip: str, now: float) -> None:
+        minute_bucket = int(now // 60)
+        key = (ip, minute_bucket)
+        self._scan_hits[key] = self._scan_hits.get(key, 0) + 1
+        self._prune_old(self._scan_hits, minute_bucket - 6)
+
+    def _should_block_ip(self, ip: str, now: float) -> bool:
+        current_minute = int(now // 60)
+        total = 0
+        for offset in range(5):
+            total += self._scan_hits.get((ip, current_minute - offset), 0)
+            if total >= self._SCAN_THRESHOLD:
+                return True
+        return False
+
+    def _clear_scan_hits(self, ip: str) -> None:
+        keys_to_remove = [k for k in self._scan_hits if k[0] == ip]
+        for k in keys_to_remove:
+            self._scan_hits.pop(k, None)
+
+    @staticmethod
+    def _prune_old(store: dict[tuple[str, int], int], oldest_bucket: int) -> None:
+        keys_to_remove = [k for k in store if k[1] < oldest_bucket]
+        for k in keys_to_remove:
+            store.pop(k, None)
+
 # --- レート制限 ---
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -128,66 +234,79 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AnalyticsMiddleware)
+app.add_middleware(BotShieldMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
-def root() -> FileResponse:
+@limiter.limit("60/minute")
+def root(request: Request) -> FileResponse:
     return FileResponse("static/landing.html")
 
 
 @app.get("/app")
-def app_page() -> FileResponse:
+@limiter.limit("60/minute")
+def app_page(request: Request) -> FileResponse:
     return FileResponse("static/index.html")
 
 
 @app.get("/privacy")
-def privacy_page() -> FileResponse:
+@limiter.limit("60/minute")
+def privacy_page(request: Request) -> FileResponse:
     return FileResponse("static/privacy.html")
 
 
 @app.get("/terms")
-def terms_page() -> FileResponse:
+@limiter.limit("60/minute")
+def terms_page(request: Request) -> FileResponse:
     return FileResponse("static/terms.html")
 
 
 @app.get("/contact")
-def contact_page() -> FileResponse:
+@limiter.limit("60/minute")
+def contact_page(request: Request) -> FileResponse:
     return FileResponse("static/contact.html")
 
 
 @app.get("/blog")
-def blog_index_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_index_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/index.html")
 
 
 @app.get("/blog/vidscope-vs-tubebuddy-vidiq-socialblade")
-def blog_vidscope_vs_competitors_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_vidscope_vs_competitors_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/vidscope-vs-tubebuddy-vidiq-socialblade.html")
 
 
 @app.get("/blog/youtube-cpm-rpm-calculation-guide")
-def blog_youtube_cpm_rpm_guide_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_youtube_cpm_rpm_guide_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/youtube-cpm-rpm-calculation-guide.html")
 
 
 @app.get("/blog/free-youtube-competitor-analysis-tools")
-def blog_free_competitor_tools_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_free_competitor_tools_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/free-youtube-competitor-analysis-tools.html")
 
 
 @app.get("/blog/youtube-competitor-analysis-guide")
-def blog_youtube_competitor_analysis_guide_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_youtube_competitor_analysis_guide_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/youtube-competitor-analysis-guide.html")
 
 
 @app.get("/blog/youtube-genre-cpm-guide")
-def blog_youtube_genre_cpm_guide_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_youtube_genre_cpm_guide_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/youtube-genre-cpm-guide.html")
 
 
 @app.get("/blog/youtube-niche-research-guide")
-def blog_youtube_niche_research_guide_page() -> FileResponse:
+@limiter.limit("60/minute")
+def blog_youtube_niche_research_guide_page(request: Request) -> FileResponse:
     return FileResponse("static/blog/youtube-niche-research-guide.html")
 
 
@@ -353,7 +472,7 @@ def delete_key(index: int, x_admin_password: str = Header(None)):
 
 
 @app.get("/api/search", response_model=SearchResponse)
-@limiter.limit("30/minute")
+@limiter.limit("60/minute")
 def search(
     request: Request,
     q: str = Query("", description="Search keyword"),
